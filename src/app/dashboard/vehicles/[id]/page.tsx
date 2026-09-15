@@ -1,0 +1,130 @@
+import type { Metadata } from 'next'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { ArchiveIcon, ExternalLinkIcon } from 'lucide-react'
+
+import { ConfirmActionButton } from '@/components/dashboard/confirm-action-button'
+import { PageHeader } from '@/components/dashboard/page-header'
+import { RegistrationCard } from '@/components/dashboard/registration-card'
+import { ToneBadge, UrgencyBadge, VehicleStatusBadge } from '@/components/dashboard/status-badges'
+import { VehicleForm } from '@/components/dashboard/vehicle-form'
+import { VehiclePhotos } from '@/components/dashboard/vehicle-photos'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { buttonVariants } from '@/components/ui/button'
+import { archiveVehicleAction, updateVehicleAction } from '@/lib/actions/vehicles'
+import { requireAdmin } from '@/lib/auth'
+import { getVehicleCategories } from '@/lib/data/lookups'
+import { currentDocument, getVehicleForAdmin, sortedPhotos } from '@/lib/data/vehicles'
+import { daysUntil, urgencyFor } from '@/lib/expiry'
+import { formatDaysToExpire, formatMonthYear, vehicleTitle } from '@/lib/format'
+import { vehiclePhotoUrl } from '@/lib/storage-url'
+import { cn } from '@/lib/utils'
+
+type Params = Promise<{ id: string }>
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { id } = await params
+  const vehicle = await getVehicleForAdmin(id)
+  return { title: vehicle ? vehicleTitle(vehicle) : 'Vehicle' }
+}
+
+export default async function EditVehiclePage({
+  params,
+  searchParams,
+}: {
+  params: Params
+  searchParams: Promise<{ created?: string }>
+}) {
+  await requireAdmin()
+  const [{ id }, { created }] = await Promise.all([params, searchParams])
+  const [vehicle, categories] = await Promise.all([getVehicleForAdmin(id), getVehicleCategories()])
+
+  if (!vehicle) notFound()
+
+  const registration = currentDocument(vehicle.vehicle_documents, 'registration')
+  const days = registration?.expires_at ? daysUntil(registration.expires_at) : null
+  const urgency = days !== null ? urgencyFor(days) : null
+
+  const photos = sortedPhotos(vehicle).map((photo) => ({
+    id: photo.id,
+    url: vehiclePhotoUrl(photo.storage_path),
+    isCover: photo.is_cover,
+  }))
+
+  return (
+    <>
+      <PageHeader
+        title={vehicleTitle(vehicle)}
+        back={{ href: '/dashboard/vehicles', label: 'Vehicles' }}
+        actions={
+          <>
+            <VehicleStatusBadge status={vehicle.status} />
+            {vehicle.status === 'available' && (
+              <Link
+                href={`/vehicles/${vehicle.id}`}
+                target="_blank"
+                className={cn(buttonVariants({ variant: 'outline' }), 'h-9 px-3')}
+              >
+                <ExternalLinkIcon />
+                View on site
+              </Link>
+            )}
+            {vehicle.status !== 'archived' && (
+              <ConfirmActionButton
+                action={archiveVehicleAction.bind(null, vehicle.id)}
+                title="Archive this vehicle?"
+                description="It will be removed from the public fleet and hidden from the overview. Its history is kept."
+                confirmLabel="Archive"
+                variant="outline"
+                className="h-9 px-3"
+              >
+                <ArchiveIcon />
+                Archive
+              </ConfirmActionButton>
+            )}
+          </>
+        }
+      />
+
+      {created && (
+        <Alert className="mb-6 border-brand/30 bg-brand/5">
+          <AlertDescription>
+            Vehicle saved. Add photos and the registration below to finish setting it up.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+        <div className="order-2 space-y-6 xl:order-1">
+          <VehicleForm
+            action={updateVehicleAction.bind(null, vehicle.id)}
+            categories={categories}
+            vehicle={vehicle}
+            submitLabel="Save changes"
+          />
+        </div>
+
+        <div className="order-1 space-y-6 xl:order-2">
+          <RegistrationCard
+            vehicleId={vehicle.id}
+            registration={registration}
+            status={
+              registration?.expires_at && urgency && days !== null ? (
+                <>
+                  <ToneBadge tone="neutral">{formatMonthYear(registration.expires_at)}</ToneBadge>
+                  <UrgencyBadge
+                    urgency={urgency}
+                    label={urgency === 'ok' ? 'Up to date' : `${days < 0 ? 'Expired' : 'Expires'} ${formatDaysToExpire(days)}`}
+                  />
+                </>
+              ) : (
+                <ToneBadge tone="danger">Missing</ToneBadge>
+              )
+            }
+          />
+          <VehiclePhotos vehicleId={vehicle.id} photos={photos} />
+        </div>
+      </div>
+    </>
+  )
+}
