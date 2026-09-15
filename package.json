@@ -12,6 +12,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:push": "supabase db push",
+    "db:push:url": "node --env-file=.env.local scripts/db-push.mjs",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/types/database.ts",
     "create-admin": "tsx --env-file=.env.local scripts/create-admin.ts"
   },

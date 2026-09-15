@@ -22,6 +22,12 @@ grant select, insert, update, delete on public.profiles, public.vehicles,
   public.customer_document_types
   to authenticated;
 
+-- service_role (usado so por scripts administrativos, como o create-admin) e
+-- a execucao das funcoes chamadas dentro das policies: explicitos para nao
+-- depender das permissoes padrao do projeto, que o Supabase vem restringindo.
+grant all on all tables in schema public to service_role;
+grant execute on function public.is_admin() to anon, authenticated, service_role;
+
 -- Placa e chassi sao dados internos. A RLS filtra LINHAS, nao COLUNAS -- entao
 -- o visitante anonimo recebe permissao apenas nas colunas da vitrine. Qualquer
 -- `select *` feito como anon passa a falhar, o que e proposital: a consulta do

@@ -1,41 +1,9 @@
--- Carental :: seed
--- Roda automaticamente no `supabase db reset` (ambiente local / staging).
+-- Carental :: seed de DESENVOLVIMENTO
+-- Roda so no `supabase db reset` local. Carrega veiculos e registrations
+-- ficticios -- nunca aplicar no projeto do cliente.
 --
--- As listas abaixo ja refletem as respostas do cliente. Incluir ou remover
--- categoria e tipo de documento continua sendo INSERT/UPDATE aqui -- nenhuma
--- migration nova e necessaria.
-
--- ------------------------------------------------------------- categorias
--- Definidas pelo cliente por tipo de carroceria (e nao por faixa de preco).
-
-insert into public.vehicle_categories (slug, label, sort_order) values
-  ('sedan',       'Sedan',        1),
-  ('hatchback',   'Hatchback',    2),
-  ('wagon',       'Wagon',        3),
-  ('suv',         'SUV',          4),
-  ('coupe',       'Coupe',        5),
-  ('convertible', 'Convertible',  6),
-  ('minivan',     'Minivan',      7),
-  ('pickup',      'Pickup Truck', 8),
-  ('van',         'Van',          9)
-on conflict (slug) do nothing;
-
--- --------------------------------------- tipos de documento do veiculo
--- O cliente acompanha vencimento apenas da registration, informada em mes/ano.
--- Insurance e inspection ficam prontos para entrar depois, se ele quiser.
-
-insert into public.vehicle_document_types (slug, label, requires_expiry, sort_order) values
-  ('registration', 'Registration', true, 1)
-on conflict (slug) do nothing;
-
--- --------------------------------------- tipos de documento do locatario
--- Enviados no momento do cadastro, antes de qualquer locacao.
-
-insert into public.customer_document_types (slug, label, is_required, requires_expiry, sort_order) values
-  ('dl_front',         'Driver''s license (front)', true, true,  1),
-  ('dl_back',          'Driver''s license (back)',  true, false, 2),
-  ('proof_of_address', 'Proof of address',          true, false, 3)
-on conflict (slug) do nothing;
+-- Categorias e tipos de documento NAO estao aqui: sao dados de referencia e
+-- vivem na migration 20260910120400_reference_data.sql.
 
 -- ------------------------------------------------------- veiculos de exemplo
 -- Dados ficticios para desenvolvimento e para o cliente ver o sistema cheio.

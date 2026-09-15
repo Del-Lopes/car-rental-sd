@@ -8,9 +8,25 @@ create extension if not exists "pgcrypto";
 
 -- ---------------------------------------------------------------- enums fixos
 
-create type public.user_role as enum ('admin', 'customer');
-create type public.vehicle_status as enum ('available', 'rented', 'maintenance', 'archived');
-create type public.document_status as enum ('pending', 'approved', 'rejected');
+-- Em bloco com tratamento de duplicidade: se uma execucao anterior parou no
+-- meio, rodar o arquivo de novo nao falha por causa dos tipos ja criados.
+do $$
+begin
+  create type public.user_role as enum ('admin', 'customer');
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.vehicle_status as enum ('available', 'rented', 'maintenance', 'archived');
+exception when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.document_status as enum ('pending', 'approved', 'rejected');
+exception when duplicate_object then null;
+end $$;
 
 -- -------------------------------------------------------------------- helpers
 
@@ -22,21 +38,6 @@ begin
   new.updated_at = now();
   return new;
 end;
-$$;
-
--- SECURITY DEFINER para nao disparar a RLS de profiles dentro das policies que
--- consultam profiles (evita recursao infinita).
-create or replace function public.is_admin()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.profiles
-    where id = auth.uid() and role = 'admin'
-  );
 $$;
 
 -- -------------------------------------------------------------------- lookups
@@ -80,6 +81,24 @@ create table public.profiles (
 
 create index profiles_role_idx on public.profiles (role);
 
+-- is_admin() fica DEPOIS da tabela profiles: funcao em `language sql` tem o
+-- corpo validado na criacao, e referenciar uma tabela ainda inexistente falha
+-- com 42P01 ("relation public.profiles does not exist").
+-- SECURITY DEFINER para nao disparar a RLS de profiles dentro das policies que
+-- consultam profiles (evita recursao infinita).
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  );
+$$;
+
 create trigger profiles_set_updated_at
   before update on public.profiles
   for each row execute function public.set_updated_at();
@@ -109,15 +128,24 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- Impede que um cliente promova a si mesmo a admin editando o proprio profile.
+--
+-- So barra quem chega como usuario final (anon/authenticated) e nao e admin.
+-- O service_role (script create-admin) e o postgres (SQL Editor) passam.
+-- Por isso a funcao NAO e security definer: dentro de uma, current_user seria o
+-- dono da funcao e nunca daria para saber quem chamou -- foi exatamente esse o
+-- bug que fazia o create-admin "concluir" sem promover ninguem.
+-- Erro explicito em vez de reverter em silencio: falha visivel e rastreavel.
 create or replace function public.lock_profile_role()
 returns trigger
 language plpgsql
-security definer
 set search_path = public
 as $$
 begin
-  if new.role is distinct from old.role and not public.is_admin() then
-    new.role = old.role;
+  if new.role is distinct from old.role
+     and current_user in ('anon', 'authenticated')
+     and not public.is_admin() then
+    raise exception 'Only an admin can change user roles'
+      using errcode = '42501';
   end if;
   return new;
 end;
