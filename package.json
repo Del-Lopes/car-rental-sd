@@ -2,6 +2,9 @@
   "name": "carental",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
@@ -14,7 +17,7 @@
     "db:push": "supabase db push",
     "db:push:url": "node --env-file=.env.local scripts/db-push.mjs",
     "db:types": "supabase gen types typescript --linked --schema public > src/lib/types/database.ts",
-    "create-admin": "tsx --env-file=.env.local scripts/create-admin.ts"
+    "create-admin": "node --experimental-websocket --env-file=.env.local --import tsx scripts/create-admin.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

@@ -5,19 +5,34 @@
  * transforme alguem em admin: o trigger do banco cria todo mundo como
  * 'customer' e o trigger profiles_lock_role impede a auto-promocao.
  *
- * Uso:
+ * Uso (recomendado -- a senha nao fica no historico do terminal):
+ *   ADMIN_PASSWORD=... npm run create-admin -- admin@carental.com "Nome do Admin"
+ *
+ * Uso alternativo, com a senha como argumento:
  *   npm run create-admin -- admin@carental.com "SenhaForte123" "Nome do Admin"
  */
 
 import { createClient } from '@supabase/supabase-js'
 
-const [email, password, fullName] = process.argv.slice(2)
+const args = process.argv.slice(2)
+const passwordFromEnv = process.env.ADMIN_PASSWORD
+
+// Com ADMIN_PASSWORD os argumentos sao <email> [nome]; sem ela, <email> <senha> [nome].
+const [email, password, fullName] = passwordFromEnv
+  ? [args[0], passwordFromEnv, args[1]]
+  : [args[0], args[1], args[2]]
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!email || !password) {
-  console.error('Uso: npm run create-admin -- <email> <senha> [nome]')
+  console.error('Uso: ADMIN_PASSWORD=... npm run create-admin -- <email> [nome]')
+  process.exit(1)
+}
+
+// Mesma regra do cadastro pelo site (validation/auth.ts).
+if (password.length < 8) {
+  console.error('A senha precisa ter pelo menos 8 caracteres.')
   process.exit(1)
 }
 
@@ -71,7 +86,15 @@ async function main() {
     process.exit(1)
   }
 
-  console.log(`Pronto. ${email} agora e admin.`)
+  // Confere no banco em vez de confiar no update: foi assim que um trigger ja
+  // chegou a reverter a promocao em silencio.
+  const { data: saved } = await supabase.from('profiles').select('role').eq('id', userId).maybeSingle()
+  if (saved?.role !== 'admin') {
+    console.error(`O update rodou, mas o papel salvo e "${saved?.role ?? 'nenhum'}". Nada foi promovido.`)
+    process.exit(1)
+  }
+
+  console.log(`Pronto. ${email} agora e admin (confirmado no banco).`)
 }
 
 main()

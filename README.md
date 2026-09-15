@@ -15,6 +15,12 @@ Planejamento e escopo: [ROADMAP.md](ROADMAP.md) · Pendencias com o cliente: [PE
 | Validacao | Zod + react-hook-form |
 | Deploy | Vercel |
 
+## Requisito: Node.js 22+
+
+O `supabase-js` usa o WebSocket nativo do Node, que so existe a partir da versao
+22. Em versoes anteriores o app nao consegue nem criar o client do Supabase e o
+`npm run dev` quebra. A Vercel ja usa Node 22 (declarado em `engines`).
+
 ## Modo preview (sem banco)
 
 Sem as variaveis do Supabase o app liga sozinho o **modo preview**: todas as telas
@@ -64,11 +70,19 @@ Editor do painel do Supabase.
 ### 4. Criar o administrador
 
 Nao existe caminho pela interface que promova alguem a admin -- o banco cria
-todo cadastro como `customer` e bloqueia a auto-promocao. Use:
+todo cadastro como `customer` e bloqueia a auto-promocao. Use o script, passando
+a senha por variavel de ambiente para ela nao ficar no historico do terminal:
 
-```bash
-npm run create-admin -- admin@carental.com "SenhaForte123" "Nome do Admin"
+```powershell
+$env:ADMIN_PASSWORD = Read-Host 'Senha' -MaskInput
+npm run create-admin -- admin@carental.com "Nome do Admin"
+$env:ADMIN_PASSWORD = $null
 ```
+
+O script confere o papel salvo no banco ao final e falha se a promocao nao
+tiver sido aplicada. Precisa de `SUPABASE_SERVICE_ROLE_KEY` no `.env.local`.
+
+> Admin atual do projeto: carentaldev@gmail.com (Flavio Gongola).
 
 ### 5. Rodar
 

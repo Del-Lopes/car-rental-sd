@@ -120,6 +120,21 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
                 <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 3} />
               ))}
             </div>
+          ) : allVehicles.length === 0 ? (
+            // Frota vazia (ex.: logo apos o lancamento) e diferente de filtro sem
+            // resultado: aqui nao ha o que "limpar", entao o convite e se cadastrar.
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-6 py-16 text-center">
+              <CarFrontIcon className="size-8 text-brand" strokeWidth={1.5} />
+              <div className="space-y-1">
+                <p className="font-medium">New vehicles are on the way</p>
+                <p className="text-sm text-muted-foreground">
+                  Create your account now and get your documents approved before the fleet goes live.
+                </p>
+              </div>
+              <Link href="/register" className={cn(buttonVariants(), 'mt-2 h-9 px-4')}>
+                Create account
+              </Link>
+            </div>
           ) : (
             <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border px-6 py-16 text-center">
               <SearchXIcon className="size-8 text-muted-foreground" strokeWidth={1.5} />
