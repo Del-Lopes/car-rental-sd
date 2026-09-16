@@ -101,21 +101,41 @@ para um cliente cadastrado → um contrato pendente aparece para o cliente em
 assinatura (versao dos termos, dados do aluguel, data/hora, IP, navegador) e o
 cliente recebe o contrato por e-mail, com copia para o Carental.
 
-Variaveis necessarias **na Vercel** (secretas, sem prefixo `NEXT_PUBLIC_`):
+A assinatura roda com a sessao do proprio cliente -- nao precisa de
+`SUPABASE_SERVICE_ROLE_KEY` na Vercel. O banco garante que ninguem assina por
+outro, que o nome bate com o cadastro e que a versao dos termos e a vigente. IP e
+navegador sao registrados, mas como dados de apoio: o banco nao consegue provar
+que nao foram alterados.
 
-| Variavel | Para que |
+### E-mail (Brevo)
+
+Gmail exige verificacao em 2 etapas para SMTP; por isso o envio usa o Brevo
+(gratis ate 300 e-mails/dia, sem dominio proprio).
+
+1. Crie a conta em <https://www.brevo.com> com carentaldev@gmail.com
+2. *Senders, Domains & Dedicated IPs > Senders*: adicione carentaldev@gmail.com e confirme pelo e-mail recebido
+3. *SMTP & API > SMTP*: copie o **Login** e gere uma **SMTP key**
+4. Preencha no `.env.local` (teste local) e na Vercel (producao), como variaveis secretas:
+
+| Variavel | Valor |
 |---|---|
-| `SUPABASE_SERVICE_ROLE_KEY` | A assinatura roda no servidor para registrar o IP real; sem ela, assinar fica indisponivel |
-| `SMTP_USER` | `carentaldev@gmail.com` |
-| `SMTP_PASS` | Senha de app do Google (nao a senha da conta) |
+| `SMTP_HOST` | `smtp-relay.brevo.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | o Login do SMTP do Brevo |
+| `SMTP_PASS` | a SMTP key |
+| `MAIL_FROM_ADDRESS` | `carentaldev@gmail.com` |
+| `MAIL_FROM_NAME` | `Carental` |
 
-Senha de app do Gmail: ative a verificacao em 2 etapas na conta e gere a senha em
-<https://myaccount.google.com/apppasswords>. Sem SMTP o contrato e assinado
-normalmente; so o e-mail nao sai, e o admin pode reenviar depois pela tela do contrato.
+Como @gmail.com nao pode ser autenticado por terceiros, o Brevo troca o dominio de
+envio por `@brevosend.com`; o nome "Carental" e mantido e as respostas vao para
+carentaldev@gmail.com. Com dominio proprio autenticado no Brevo, isso deixa de acontecer.
 
-Dica: a mesma senha de app pode ser usada no Supabase em *Authentication >
-Emails > SMTP Settings* (host `smtp.gmail.com`, porta 465), o que tira os e-mails
-de cadastro e troca de senha do limite baixo do servidor padrao do Supabase.
+Sem SMTP o contrato e assinado normalmente; so o e-mail nao sai, e o admin pode
+reenviar depois pela tela do contrato.
+
+Dica: o mesmo SMTP do Brevo pode ser configurado no Supabase em *Authentication >
+Emails > SMTP Settings*, o que tira os e-mails de cadastro e troca de senha do
+limite baixo do servidor padrao do Supabase.
 
 ## Comandos
 

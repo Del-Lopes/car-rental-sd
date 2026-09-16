@@ -8,7 +8,6 @@ import { requireAdmin, requireProfile } from '@/lib/auth'
 import { buildAgreementEmail } from '@/lib/email/agreement-email'
 import { isEmailConfigured, sendMail } from '@/lib/email/mailer'
 import { PREVIEW_WRITE_MESSAGE, isPreviewMode } from '@/lib/preview'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { publishTermsSchema, signAgreementSchema } from '@/lib/validation/agreements'
 import { failure, success, validationFailure, type ActionResult } from '@/lib/actions/result'
@@ -16,10 +15,10 @@ import { failure, success, validationFailure, type ActionResult } from '@/lib/ac
 /**
  * Termos e contratos.
  *
- * A assinatura passa pelo service_role de proposito: o cliente nao pode chamar
- * a funcao de assinatura direto pela API, senao poderia informar um IP falso.
- * Aqui o servidor valida a sessao, le IP e navegador da requisicao real e so
- * entao assina em nome dele.
+ * A assinatura roda com a sessao do proprio cliente (sem chave service_role):
+ * o banco fixa o dono do contrato no usuario logado e valida nome, versao dos
+ * termos e data/hora. IP e navegador sao lidos da requisicao aqui no servidor,
+ * mas o banco nao consegue garantir que nao foram forjados -- sao dados de apoio.
  */
 
 export async function publishTermsAction(
@@ -50,15 +49,11 @@ export async function signAgreementAction(
   _prevState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
-  const profile = await requireProfile()
+  await requireProfile()
   if (isPreviewMode()) return failure(PREVIEW_WRITE_MESSAGE)
 
   const parsed = signAgreementSchema.safeParse(Object.fromEntries(formData))
   if (!parsed.success) return validationFailure(parsed.error)
-
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return failure('Online signing is not configured yet. Please contact Carental.')
-  }
 
   const requestHeaders = await headers()
   const ip =
@@ -67,17 +62,16 @@ export async function signAgreementAction(
     'unknown'
   const userAgent = requestHeaders.get('user-agent') ?? 'unknown'
 
-  const admin = createAdminClient()
-  const { data: signed, error } = await admin.rpc('sign_rental_agreement', {
+  const supabase = await createClient()
+  const { data: signed, error } = await supabase.rpc('sign_my_rental_agreement', {
     p_agreement_id: parsed.data.agreement_id,
-    p_customer_id: profile.id,
     p_terms_version_id: parsed.data.terms_version_id,
     p_signed_name: parsed.data.signed_name,
     p_ip: ip,
     p_user_agent: userAgent,
   })
 
-  // As mensagens levantadas pela funcao ja sao escritas para o cliente ler.
+  // As mensagens levantadas pelo banco ja sao escritas para o cliente ler.
   if (error) {
     if (error.message.includes('must match')) {
       return failure(error.message, { signed_name: [error.message] })
@@ -109,14 +103,14 @@ export async function resendAgreementEmailAction(agreementId: string): Promise<A
 /**
  * Monta e envia o e-mail a partir do que esta gravado no banco -- nunca do
  * formulario -- para que a copia do cliente seja identica ao registro.
+ * Le com a sessao de quem esta logado: o dono ou o admin, os unicos que a RLS
+ * deixa ver o contrato.
  */
 async function deliverAgreementEmail(agreementId: string): Promise<{ sent: boolean; error?: string }> {
-  if (!isEmailConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return { sent: false, error: 'Email is not configured' }
-  }
+  if (!isEmailConfigured()) return { sent: false, error: 'Email is not configured' }
 
-  const admin = createAdminClient()
-  const { data: agreement } = await admin
+  const supabase = await createClient()
+  const { data: agreement } = await supabase
     .from('rental_agreements')
     .select('*')
     .eq('id', agreementId)
@@ -127,9 +121,9 @@ async function deliverAgreementEmail(agreementId: string): Promise<{ sent: boole
   }
 
   const [{ data: terms }, { data: customer }] = await Promise.all([
-    admin.from('terms_versions').select('version, body').eq('id', agreement.terms_version_id).maybeSingle(),
+    supabase.from('terms_versions').select('version, body').eq('id', agreement.terms_version_id).maybeSingle(),
     agreement.customer_id
-      ? admin.from('profiles').select('email, full_name').eq('id', agreement.customer_id).maybeSingle()
+      ? supabase.from('profiles').select('email, full_name').eq('id', agreement.customer_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ])
 
@@ -146,13 +140,10 @@ async function deliverAgreementEmail(agreementId: string): Promise<{ sent: boole
     signerIp: agreement.signer_ip,
   })
 
-  const result = await sendMail({ to: customer.email, ...email, copyToSender: true })
+  const result = await sendMail({ to: customer.email, ...email, copyToCarental: true })
 
   if (result.sent) {
-    await admin
-      .from('rental_agreements')
-      .update({ email_sent_at: new Date().toISOString() })
-      .eq('id', agreement.id)
+    await supabase.rpc('mark_agreement_email_sent', { p_agreement_id: agreement.id })
   }
 
   return result

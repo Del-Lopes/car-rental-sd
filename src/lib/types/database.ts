@@ -466,6 +466,20 @@ export interface Database {
         }
         Returns: Database['public']['Tables']['rental_agreements']['Row']
       }
+      sign_my_rental_agreement: {
+        Args: {
+          p_agreement_id: string
+          p_terms_version_id: string
+          p_signed_name: string
+          p_ip: string
+          p_user_agent: string
+        }
+        Returns: Database['public']['Tables']['rental_agreements']['Row']
+      }
+      mark_agreement_email_sent: {
+        Args: { p_agreement_id: string }
+        Returns: undefined
+      }
       register_rental_payment: {
         Args: { p_rental_id: string; p_amount?: number | null; p_paid_on?: string }
         Returns: Database['public']['Tables']['rentals']['Row']
