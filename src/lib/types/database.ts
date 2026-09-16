@@ -17,6 +17,12 @@ export type Fuel = 'gasoline' | 'diesel' | 'hybrid' | 'electric'
 /** Faixas do semaforo do dashboard de vencimentos (view v_expiring_vehicle_documents). */
 export type DocumentUrgency = 'expired' | 'critical' | 'warning' | 'upcoming' | 'ok'
 
+export type RentalPlan = 'weekly' | 'monthly'
+export type RentalStatus = 'active' | 'closed'
+
+/** Faixas do semaforo das cobrancas (view v_rental_due). */
+export type PaymentUrgency = 'overdue' | 'due_today' | 'soon' | 'upcoming' | 'ok'
+
 export interface Database {
   public: {
     Tables: {
@@ -204,6 +210,62 @@ export interface Database {
         }>
         Relationships: []
       }
+      rentals: {
+        Row: {
+          id: string
+          vehicle_id: string
+          customer_id: string | null
+          renter_name: string | null
+          plan: RentalPlan
+          rate_amount: number
+          deposit_amount: number | null
+          started_on: string
+          next_due_on: string
+          ended_on: string | null
+          status: RentalStatus
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          vehicle_id: string
+          customer_id?: string | null
+          renter_name?: string | null
+          plan: RentalPlan
+          rate_amount: number
+          deposit_amount?: number | null
+          started_on?: string
+          next_due_on: string
+          ended_on?: string | null
+          status?: RentalStatus
+          notes?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['rentals']['Insert']>
+        Relationships: []
+      }
+      rental_payments: {
+        Row: {
+          id: string
+          rental_id: string
+          amount: number
+          paid_on: string
+          covers_due_on: string | null
+          notes: string | null
+          recorded_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          rental_id: string
+          amount: number
+          paid_on?: string
+          covers_due_on?: string | null
+          notes?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['rental_payments']['Insert']>
+        Relationships: []
+      }
       customer_document_types: {
         Row: {
           slug: string
@@ -263,6 +325,32 @@ export interface Database {
           customer_docs_pending: number
           vehicle_docs_expired: number
           vehicle_docs_expiring: number
+          rentals_active: number
+          payments_overdue: number
+          payments_due_soon: number
+        }
+        Relationships: []
+      }
+      v_rental_due: {
+        Row: {
+          id: string
+          vehicle_id: string
+          customer_id: string | null
+          renter: string
+          plan: RentalPlan
+          rate_amount: number
+          deposit_amount: number | null
+          started_on: string
+          next_due_on: string
+          notes: string | null
+          make: string
+          model: string
+          year: number
+          plate: string | null
+          days_to_due: number
+          urgency: PaymentUrgency
+          last_paid_on: string | null
+          total_paid: number
         }
         Relationships: []
       }
@@ -284,6 +372,10 @@ export interface Database {
     }
     Functions: {
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      register_rental_payment: {
+        Args: { p_rental_id: string; p_amount?: number | null; p_paid_on?: string }
+        Returns: Database['public']['Tables']['rentals']['Row']
+      }
     }
     Enums: {
       user_role: UserRole
@@ -306,6 +398,9 @@ export type VehicleDocumentType = PublicSchema['Tables']['vehicle_document_types
 export type CustomerDocumentType = PublicSchema['Tables']['customer_document_types']['Row']
 
 export type ExpiringVehicleDocument = PublicSchema['Views']['v_expiring_vehicle_documents']['Row']
+export type Rental = PublicSchema['Tables']['rentals']['Row']
+export type RentalPayment = PublicSchema['Tables']['rental_payments']['Row']
+export type RentalDue = PublicSchema['Views']['v_rental_due']['Row']
 export type AdminDashboardStats = PublicSchema['Views']['v_admin_dashboard_stats']['Row']
 export type CustomerDocumentSummary = PublicSchema['Views']['v_customer_document_summary']['Row']
 

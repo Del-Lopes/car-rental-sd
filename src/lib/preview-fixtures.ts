@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { daysUntil, urgencyFor } from '@/lib/expiry'
+import { daysUntil, paymentUrgencyFor, urgencyFor } from '@/lib/expiry'
 import { lastDayOfMonth } from '@/lib/format'
 import type {
   AdminDashboardStats,
@@ -9,6 +9,10 @@ import type {
   CustomerDocumentType,
   ExpiringVehicleDocument,
   Profile,
+  Rental,
+  RentalDue,
+  RentalPayment,
+  RentalPlan,
   Vehicle,
   VehicleCategory,
   VehicleDocument,
@@ -60,13 +64,13 @@ type VehicleSeed = Omit<Vehicle, 'created_at' | 'updated_at' | 'doors' | 'vin'> 
 
 const vehicleSeeds: VehicleSeed[] = [
   { id: 'a0000000-0000-4000-8000-000000000001', make: 'Mercedes-Benz', model: 'S-Class', year: 2023, category_slug: 'sedan', transmission: 'automatic', fuel: 'gasoline', seats: 5, doors: 4, color: 'Black', mileage: 12400, plate: 'CAR-1001', weekly_rate: 1750, monthly_rate: 5900, security_deposit: 1500, status: 'available', featured: true, description: 'Full-size luxury sedan with premium leather interior and driver assistance package.' },
-  { id: 'a0000000-0000-4000-8000-000000000002', make: 'BMW', model: 'X5', year: 2022, category_slug: 'suv', transmission: 'automatic', fuel: 'gasoline', seats: 5, doors: 5, color: 'Alpine White', mileage: 28750, plate: 'CAR-1002', weekly_rate: 1290, monthly_rate: 4400, security_deposit: 1000, status: 'available', featured: true, description: 'Midsize luxury SUV, all-wheel drive, panoramic roof.' },
+  { id: 'a0000000-0000-4000-8000-000000000002', make: 'BMW', model: 'X5', year: 2022, category_slug: 'suv', transmission: 'automatic', fuel: 'gasoline', seats: 5, doors: 5, color: 'Alpine White', mileage: 28750, plate: 'CAR-1002', weekly_rate: 1290, monthly_rate: 4400, security_deposit: 1000, status: 'rented', featured: true, description: 'Midsize luxury SUV, all-wheel drive, panoramic roof.' },
   { id: 'a0000000-0000-4000-8000-000000000003', make: 'Toyota', model: 'Camry', year: 2023, category_slug: 'sedan', transmission: 'automatic', fuel: 'hybrid', seats: 5, doors: 4, color: 'Silver', mileage: 19300, plate: 'CAR-1003', weekly_rate: 520, monthly_rate: 1750, security_deposit: 500, status: 'available', featured: false, description: 'Reliable hybrid sedan with excellent fuel economy. Great for long trips.' },
   { id: 'a0000000-0000-4000-8000-000000000004', make: 'Chevrolet', model: 'Tahoe', year: 2021, category_slug: 'suv', transmission: 'automatic', fuel: 'gasoline', seats: 7, doors: 5, color: 'Dark Gray', mileage: 54200, plate: 'CAR-1004', weekly_rate: 1050, monthly_rate: 3600, security_deposit: 800, status: 'rented', featured: false, description: 'Full-size SUV seating seven. Ideal for family trips and group travel.' },
   { id: 'a0000000-0000-4000-8000-000000000005', make: 'Tesla', model: 'Model 3', year: 2024, category_slug: 'sedan', transmission: 'automatic', fuel: 'electric', seats: 5, doors: 4, color: 'Deep Blue', mileage: 6100, plate: 'CAR-1005', weekly_rate: 760, monthly_rate: 2600, security_deposit: 700, status: 'available', featured: true, description: 'All-electric sedan with autopilot. Charging cable included.' },
   { id: 'a0000000-0000-4000-8000-000000000006', make: 'Volkswagen', model: 'Golf', year: 2022, category_slug: 'hatchback', transmission: 'automatic', fuel: 'gasoline', seats: 5, doors: 5, color: 'White', mileage: 41800, plate: 'CAR-1006', weekly_rate: 350, monthly_rate: 1200, security_deposit: 400, status: 'available', featured: false, description: 'Compact and economical. The best value in the fleet.' },
   { id: 'a0000000-0000-4000-8000-000000000007', make: 'Subaru', model: 'Outback', year: 2023, category_slug: 'wagon', transmission: 'automatic', fuel: 'gasoline', seats: 5, doors: 5, color: 'Autumn Green', mileage: 17600, plate: 'CAR-1007', weekly_rate: 690, monthly_rate: 2350, security_deposit: 600, status: 'maintenance', featured: false, description: 'All-wheel drive wagon with generous cargo space and roof rails.' },
-  { id: 'a0000000-0000-4000-8000-000000000008', make: 'Chrysler', model: 'Pacifica', year: 2022, category_slug: 'minivan', transmission: 'automatic', fuel: 'hybrid', seats: 7, doors: 5, color: 'Modern Steel', mileage: 23900, plate: 'CAR-1008', weekly_rate: 820, monthly_rate: 2800, security_deposit: 700, status: 'available', featured: false, description: 'Seven-seat minivan with sliding doors and flexible seating.' },
+  { id: 'a0000000-0000-4000-8000-000000000008', make: 'Chrysler', model: 'Pacifica', year: 2022, category_slug: 'minivan', transmission: 'automatic', fuel: 'hybrid', seats: 7, doors: 5, color: 'Modern Steel', mileage: 23900, plate: 'CAR-1008', weekly_rate: 820, monthly_rate: 2800, security_deposit: 700, status: 'rented', featured: false, description: 'Seven-seat minivan with sliding doors and flexible seating.' },
 ]
 
 export const fixtureVehicles: Vehicle[] = vehicleSeeds.map((vehicle, index) => ({
@@ -211,8 +215,83 @@ export function fixtureCustomerSummaries(): CustomerDocumentSummary[] {
   })
 }
 
+// ------------------------------------------------------------------ locacoes
+
+function isoDate(offsetDays: number): string {
+  const date = new Date(now.getTime() + offsetDays * 24 * 60 * 60 * 1000)
+  return date.toISOString().slice(0, 10)
+}
+
+/** Uma cobranca atrasada, uma vencendo hoje e uma na semana. */
+const rentalPlan: Array<[vehicleIndex: number, dueOffset: number, plan: RentalPlan, rate: number]> = [
+  [3, -3, 'weekly', 1050],
+  [1, 0, 'monthly', 4400],
+  [7, 5, 'weekly', 820],
+]
+
+export const fixtureRentals: Rental[] = rentalPlan.map(([vehicleIndex, dueOffset, plan, rate], index) => ({
+  id: `e0000000-0000-4000-8000-00000000000${index + 1}`,
+  vehicle_id: fixtureVehicles[vehicleIndex].id,
+  customer_id: index < 2 ? fixtureCustomers[index].id : null,
+  renter_name: index < 2 ? null : 'Walk-in renter',
+  plan,
+  rate_amount: rate,
+  deposit_amount: fixtureVehicles[vehicleIndex].security_deposit,
+  started_on: isoDate(-30 - index * 10),
+  next_due_on: isoDate(dueOffset),
+  ended_on: null,
+  status: 'active',
+  notes: null,
+  created_at: daysAgo(30 + index * 10),
+  updated_at: iso,
+}))
+
+export function fixtureRentalDue(): RentalDue[] {
+  return fixtureRentals
+    .map((rental) => {
+      const vehicle = fixtureVehicles.find((item) => item.id === rental.vehicle_id)!
+      const customer = fixtureCustomers.find((item) => item.id === rental.customer_id)
+      const days = daysUntil(rental.next_due_on)
+      return {
+        id: rental.id,
+        vehicle_id: rental.vehicle_id,
+        customer_id: rental.customer_id,
+        renter: rental.renter_name ?? customer?.full_name ?? 'Unknown',
+        plan: rental.plan,
+        rate_amount: rental.rate_amount,
+        deposit_amount: rental.deposit_amount,
+        started_on: rental.started_on,
+        next_due_on: rental.next_due_on,
+        notes: rental.notes,
+        make: vehicle.make,
+        model: vehicle.model,
+        year: vehicle.year,
+        plate: vehicle.plate,
+        days_to_due: days,
+        urgency: paymentUrgencyFor(days),
+        last_paid_on: isoDate(-7),
+        total_paid: rental.rate_amount * 2,
+      }
+    })
+    .sort((a, b) => a.days_to_due - b.days_to_due)
+}
+
+export const fixtureRentalPayments: RentalPayment[] = fixtureRentals.flatMap((rental, index) =>
+  [1, 2].map((n) => ({
+    id: `f000000${index}-0000-4000-8000-00000000000${n}`,
+    rental_id: rental.id,
+    amount: rental.rate_amount,
+    paid_on: isoDate(-7 * n),
+    covers_due_on: isoDate(-7 * n),
+    notes: null,
+    recorded_by: fixtureAdmin.id,
+    created_at: daysAgo(7 * n),
+  })),
+)
+
 export function fixtureDashboardStats(): AdminDashboardStats {
   const expiring = fixtureExpiringDocuments()
+  const due = fixtureRentalDue()
   return {
     vehicles_total: fixtureVehicles.filter((v) => v.status !== 'archived').length,
     vehicles_available: fixtureVehicles.filter((v) => v.status === 'available').length,
@@ -224,5 +303,8 @@ export function fixtureDashboardStats(): AdminDashboardStats {
     vehicle_docs_expiring: expiring.filter((d) =>
       ['critical', 'warning', 'upcoming'].includes(d.urgency),
     ).length,
+    rentals_active: fixtureRentals.length,
+    payments_overdue: due.filter((d) => d.urgency === 'overdue').length,
+    payments_due_soon: due.filter((d) => ['due_today', 'soon', 'upcoming'].includes(d.urgency)).length,
   }
 }

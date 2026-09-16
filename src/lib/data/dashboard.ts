@@ -15,6 +15,9 @@ const EMPTY_STATS: AdminDashboardStats = {
   customer_docs_pending: 0,
   vehicle_docs_expired: 0,
   vehicle_docs_expiring: 0,
+  rentals_active: 0,
+  payments_overdue: 0,
+  payments_due_soon: 0,
 }
 
 /** Cards do topo do dashboard: uma linha, uma ida ao banco. */

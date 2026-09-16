@@ -7,22 +7,46 @@
 
 ---
 
-## 0. Andamento (15/09/2026)
+## 0. Andamento (16/09/2026)
 
-Tudo o que não depende de banco rodando foi construído. As telas funcionam em **modo preview** (dados de exemplo, nada é gravado) até o Supabase ser conectado.
+Os Sprints 0 a 4 estão entregues e rodando com banco real. O Sprint 5 (QA) está em andamento.
 
 | Sprint | Status | Observação |
 |---|---|---|
-| 0 — Fundação | ✅ Código pronto | Migrations validadas só na sintaxe; **falta rodar `db:push`** num projeto Supabase real |
-| 1 — Vitrine pública | ✅ Pronto | Home, filtros, detalhe, SEO, sitemap, tema claro/escuro, identidade do logo |
-| 2 — Auth + Veículos | ✅ Pronto | Login, cadastro em 2 etapas, recuperação de senha, CRUD, fotos, registration mês/ano |
-| 3 — Dashboard + Clientes | ✅ Pronto | Vencimentos com semáforo, lista de clientes, aprovação/recusa de documentos |
-| 4 — Área do cliente | ✅ Telas prontas | Upload, status, reenvio após recusa, perfil e senha. Falta: domínio e produção |
-| 5 — QA e handoff | ⏳ Bloqueado | Depende do Supabase: testar fluxos com gravação real e o isolamento da RLS |
+| 0 — Fundação | ✅ Entregue | Migrations aplicadas no Supabase; 36 testes de schema e RLS passando |
+| 1 — Vitrine pública | ✅ Entregue | Home, filtros, detalhe, SEO, sitemap, tema claro/escuro, identidade do logo |
+| 2 — Auth + Veículos | ✅ Entregue | Cadastro em 2 etapas, CRUD, fotos, registration mês/ano. Testado em produção |
+| 3 — Dashboard + Clientes | ✅ Entregue | Vencimentos com semáforo, lista de clientes, revisão de documentos |
+| 4 — Área do cliente | ✅ Entregue | Upload, status, reenvio após recusa, perfil e senha |
+| 5 — QA e handoff | 🔄 Em andamento | Roteiro de testes em execução pelo cliente |
+| **Extra — Locações e cobranças** | ✅ Código pronto | Controle manual de aluguéis com vencimento de parcela no dashboard. **Falta aplicar a migration no banco** |
 
-**Bloqueado por infraestrutura:** criar o projeto Supabase → `db:push` → `create-admin` → testar gravação, upload e RLS de verdade → deploy na Vercel.
+### Módulo de locações (fora do escopo original da Fase 1)
 
-**Bloqueado pelo cliente:** fotos reais, textos e contato, domínio, política de privacidade (Kira).
+Lançamento manual, sem gateway de pagamento. O dono registra que alugou um carro e quando vence a próxima parcela; o dashboard passa a mostrar as cobranças atrasadas e a vencer nos próximos 7 dias.
+
+- Locatário pode ser um cliente cadastrado ou apenas um nome digitado
+- Planos semanal e mensal; o botão "Received" registra o recebimento e empurra o vencimento sozinho (7 dias ou 1 mês)
+- Histórico de recebimentos por locação — base para o relatório de receita da Fase 2
+- Abrir a locação marca o carro como alugado e o tira da vitrine; encerrar devolve — feito por trigger no banco
+- Um carro não aceita duas locações ativas ao mesmo tempo
+
+**Infra ativa:** GitHub `carentaldev-stack/Cartental` · Supabase `izdbkfxjtqmqfrkauvtb` · Vercel em **https://carentalsd.vercel.app**.
+Admin: carentaldev@gmail.com (Flavio Gongola).
+
+**Validado em produção:** cadastro de veículo com 2 fotos (upload OK), fotos do Storage renderizando na vitrine, página de detalhe com preços e caução, criação de conta de cliente pelo site (2 contas), login do admin.
+
+**Ainda não exercitado nos testes:** registration de veículo (0 registros) e upload de documento do locatário (0 registros) — são justamente os dois fluxos centrais do controle operacional.
+
+### Riscos e pendências abertas
+
+| Item | Situação |
+|---|---|
+| `NEXT_PUBLIC_SITE_URL` | **Ainda não aplicada** (o sitemap sai com localhost). Na Vercel, criar como tipo "Config" com `https://carentalsd.vercel.app` e redeploy |
+| URLs do Supabase Auth | Foram configuradas com o domínio antigo; precisam apontar para carentalsd.vercel.app |
+| Upload > 4,5 MB | Limite da Vercel para Server Actions, abaixo dos 10 MB anunciados. Correção: upload direto ao Storage |
+| E-mail transacional | SMTP padrão do Supabase tem limite baixo; produção pede SMTP próprio |
+| Cliente | Fotos reais, textos e contato, domínio próprio, política de privacidade (Kira) |
 
 ---
 

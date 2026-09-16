@@ -1,5 +1,15 @@
-import { DOCUMENT_STATUS_META, URGENCY_META, VEHICLE_STATUS_META } from '@/lib/constants'
-import type { DocumentStatus, DocumentUrgency, VehicleStatus } from '@/lib/types/database'
+import {
+  DOCUMENT_STATUS_META,
+  PAYMENT_URGENCY_META,
+  URGENCY_META,
+  VEHICLE_STATUS_META,
+} from '@/lib/constants'
+import type {
+  DocumentStatus,
+  DocumentUrgency,
+  PaymentUrgency,
+  VehicleStatus,
+} from '@/lib/types/database'
 import { cn } from '@/lib/utils'
 
 /**
@@ -47,6 +57,12 @@ export function VehicleStatusBadge({ status }: { status: VehicleStatus }) {
 export function UrgencyBadge({ urgency, label }: { urgency: DocumentUrgency; label?: string }) {
   const meta = URGENCY_META[urgency]
   const tone: Tone = meta.tone === 'neutral' ? 'success' : meta.tone
+  return <ToneBadge tone={tone}>{label ?? meta.label}</ToneBadge>
+}
+
+export function PaymentUrgencyBadge({ urgency, label }: { urgency: PaymentUrgency; label?: string }) {
+  const meta = PAYMENT_URGENCY_META[urgency]
+  const tone: Tone = meta.tone === 'neutral' ? 'neutral' : meta.tone
   return <ToneBadge tone={tone}>{label ?? meta.label}</ToneBadge>
 }
 

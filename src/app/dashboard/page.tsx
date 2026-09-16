@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
   AlertTriangleIcon,
+  BanknoteIcon,
   CarFrontIcon,
   CheckCircle2Icon,
   FileClockIcon,
@@ -11,14 +12,21 @@ import {
 } from 'lucide-react'
 
 import { PageHeader } from '@/components/dashboard/page-header'
-import { ToneBadge, UrgencyBadge } from '@/components/dashboard/status-badges'
+import { RecordPaymentButton } from '@/components/dashboard/record-payment-button'
+import { PaymentUrgencyBadge, ToneBadge, UrgencyBadge } from '@/components/dashboard/status-badges'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { requireProfile } from '@/lib/auth'
-import { EXPIRY_HORIZON_DAYS } from '@/lib/constants'
+import {
+  EXPIRY_HORIZON_DAYS,
+  PAYMENT_HORIZON_DAYS,
+  PAYMENT_URGENCY_META,
+  RENTAL_PLAN_META,
+} from '@/lib/constants'
 import { getDashboardStats, getExpiringVehicleDocuments, groupByUrgency } from '@/lib/data/dashboard'
-import { formatDaysToExpire, formatMonthYear } from '@/lib/format'
+import { listDueRentals } from '@/lib/data/rentals'
+import { formatCurrency, formatDate, formatDaysToExpire, formatMonthYear } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Overview' }
@@ -29,16 +37,37 @@ export default async function DashboardHomePage() {
   // A area do cliente comeca pelos documentos; o overview e so do admin.
   if (profile.role !== 'admin') redirect('/dashboard/documents')
 
-  const [stats, expiring] = await Promise.all([getDashboardStats(), getExpiringVehicleDocuments()])
+  const [stats, expiring, dueRentals] = await Promise.all([
+    getDashboardStats(),
+    getExpiringVehicleDocuments(),
+    listDueRentals(),
+  ])
   const groups = groupByUrgency(expiring)
   const firstName = profile.full_name?.split(' ')[0]
+  const overduePayments = dueRentals.filter((rental) => rental.urgency === 'overdue')
 
   return (
     <>
       <PageHeader
         title={firstName ? `Hello, ${firstName}` : 'Overview'}
-        description="Registrations that need attention and the state of the fleet."
+        description="Payments, registrations and the state of the fleet."
       />
+
+      {overduePayments.length > 0 && (
+        <div
+          role="alert"
+          className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm"
+        >
+          <BanknoteIcon className="size-4 shrink-0 text-red-600 dark:text-red-300" />
+          <span className="flex-1">
+            <strong className="font-semibold">
+              {overduePayments.length}{' '}
+              {overduePayments.length === 1 ? 'payment is overdue' : 'payments are overdue'}.
+            </strong>{' '}
+            Total expected: {formatCurrency(overduePayments.reduce((sum, r) => sum + Number(r.rate_amount), 0))}.
+          </span>
+        </div>
+      )}
 
       {stats.vehicle_docs_expired > 0 && (
         <div
@@ -55,7 +84,15 @@ export default async function DashboardHomePage() {
         </div>
       )}
 
-      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <StatCard
+          icon={BanknoteIcon}
+          label="Payments"
+          value={stats.payments_overdue > 0 ? stats.payments_overdue : stats.payments_due_soon}
+          detail={stats.payments_overdue > 0 ? 'overdue' : `due in ${PAYMENT_HORIZON_DAYS} days`}
+          href="#rentals"
+          highlight={stats.payments_overdue > 0}
+        />
         <StatCard icon={CarFrontIcon} label="Vehicles" value={stats.vehicles_total} detail={`${stats.vehicles_available} available`} href="/dashboard/vehicles" />
         <StatCard icon={WrenchIcon} label="Rented · Maintenance" value={`${stats.vehicles_rented} · ${stats.vehicles_maintenance}`} detail="out of the fleet" href="/dashboard/vehicles" />
         <StatCard icon={UsersRoundIcon} label="Customers" value={stats.customers_total} detail="registered" href="/dashboard/customers" />
@@ -68,6 +105,82 @@ export default async function DashboardHomePage() {
           highlight={stats.customer_docs_pending > 0}
         />
       </div>
+
+      <Card id="rentals" className="mb-6 scroll-mt-24">
+        <CardHeader>
+          <CardTitle>Rented vehicles and payments</CardTitle>
+          <CardDescription>
+            Active rentals with a payment due in the next {PAYMENT_HORIZON_DAYS} days, or already
+            overdue. Amounts are recorded by hand.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-0">
+          {dueRentals.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+              <CheckCircle2Icon className="size-8 text-emerald-500" strokeWidth={1.5} />
+              <p className="font-medium">
+                {stats.rentals_active > 0 ? 'No payments due right now' : 'No active rentals'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {stats.rentals_active > 0
+                  ? `${stats.rentals_active} active ${stats.rentals_active === 1 ? 'rental' : 'rentals'}, all paid up.`
+                  : 'Open a vehicle and use "Rent this vehicle out" to start one.'}
+              </p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-6">Vehicle</TableHead>
+                  <TableHead>Renter</TableHead>
+                  <TableHead className="hidden sm:table-cell">Plan</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Due</TableHead>
+                  <TableHead className="pr-6 text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dueRentals.map((rental) => (
+                  <TableRow key={rental.id}>
+                    <TableCell className="pl-6">
+                      <Link href={`/dashboard/vehicles/${rental.vehicle_id}`} className="font-medium hover:text-brand">
+                        {rental.year} {rental.make} {rental.model}
+                      </Link>
+                      {rental.plate && (
+                        <span className="block font-mono text-xs text-muted-foreground">{rental.plate}</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{rental.renter}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{RENTAL_PLAN_META[rental.plan].label}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCurrency(rental.rate_amount)}</TableCell>
+                    <TableCell>
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="tabular-nums">{formatDate(rental.next_due_on)}</span>
+                        <PaymentUrgencyBadge
+                          urgency={rental.urgency}
+                          label={
+                            rental.days_to_due < 0
+                              ? `Overdue ${formatDaysToExpire(rental.days_to_due)}`
+                              : PAYMENT_URGENCY_META[rental.urgency].label
+                          }
+                        />
+                      </span>
+                    </TableCell>
+                    <TableCell className="pr-6 text-right">
+                      <RecordPaymentButton
+                        rentalId={rental.id}
+                        amount={rental.rate_amount}
+                        plan={rental.plan}
+                        dueOn={rental.next_due_on}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

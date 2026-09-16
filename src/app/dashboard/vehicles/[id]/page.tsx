@@ -6,6 +6,7 @@ import { ArchiveIcon, ExternalLinkIcon } from 'lucide-react'
 import { ConfirmActionButton } from '@/components/dashboard/confirm-action-button'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { RegistrationCard } from '@/components/dashboard/registration-card'
+import { RentalPanel } from '@/components/dashboard/rental-panel'
 import { ToneBadge, UrgencyBadge, VehicleStatusBadge } from '@/components/dashboard/status-badges'
 import { VehicleForm } from '@/components/dashboard/vehicle-form'
 import { VehiclePhotos } from '@/components/dashboard/vehicle-photos'
@@ -13,7 +14,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { buttonVariants } from '@/components/ui/button'
 import { archiveVehicleAction, updateVehicleAction } from '@/lib/actions/vehicles'
 import { requireAdmin } from '@/lib/auth'
+import { listCustomers } from '@/lib/data/customers'
 import { getVehicleCategories } from '@/lib/data/lookups'
+import { getActiveRentalForVehicle, listRentalPayments } from '@/lib/data/rentals'
 import { currentDocument, getVehicleForAdmin, sortedPhotos } from '@/lib/data/vehicles'
 import { daysUntil, urgencyFor } from '@/lib/expiry'
 import { formatDaysToExpire, formatMonthYear, vehicleTitle } from '@/lib/format'
@@ -37,9 +40,16 @@ export default async function EditVehiclePage({
 }) {
   await requireAdmin()
   const [{ id }, { created }] = await Promise.all([params, searchParams])
-  const [vehicle, categories] = await Promise.all([getVehicleForAdmin(id), getVehicleCategories()])
+  const [vehicle, categories, rental, customers] = await Promise.all([
+    getVehicleForAdmin(id),
+    getVehicleCategories(),
+    getActiveRentalForVehicle(id),
+    listCustomers(),
+  ])
 
   if (!vehicle) notFound()
+
+  const payments = rental ? await listRentalPayments(rental.id) : []
 
   const registration = currentDocument(vehicle.vehicle_documents, 'registration')
   const days = registration?.expires_at ? daysUntil(registration.expires_at) : null
@@ -105,6 +115,18 @@ export default async function EditVehiclePage({
         </div>
 
         <div className="order-1 space-y-6 xl:order-2">
+          <RentalPanel
+            vehicleId={vehicle.id}
+            weeklyRate={vehicle.weekly_rate}
+            monthlyRate={vehicle.monthly_rate}
+            securityDeposit={vehicle.security_deposit}
+            rental={rental}
+            payments={payments}
+            customers={customers.map((customer) => ({
+              id: customer.profile_id,
+              name: customer.full_name ?? customer.email ?? 'Customer',
+            }))}
+          />
           <RegistrationCard
             vehicleId={vehicle.id}
             registration={registration}

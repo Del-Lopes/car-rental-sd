@@ -2,6 +2,8 @@ import type {
   DocumentStatus,
   DocumentUrgency,
   Fuel,
+  PaymentUrgency,
+  RentalPlan,
   Transmission,
   VehicleStatus,
 } from '@/lib/types/database'
@@ -31,6 +33,30 @@ export const DASHBOARD_URGENCIES: DocumentUrgency[] = [
 
 /** Horizonte padrao do dashboard, em dias. */
 export const EXPIRY_HORIZON_DAYS = 60
+
+/**
+ * Semaforo das cobrancas de locacao. As faixas sao mais curtas que as de
+ * documento porque parcela semanal vence a cada 7 dias -- avisar com 60 dias
+ * nao teria sentido. Precisa bater com a view v_rental_due.
+ */
+export const PAYMENT_URGENCY_META: Record<
+  PaymentUrgency,
+  { label: string; tone: 'danger' | 'warning' | 'caution' | 'info' | 'neutral'; order: number }
+> = {
+  overdue: { label: 'Overdue', tone: 'danger', order: 0 },
+  due_today: { label: 'Due today', tone: 'warning', order: 1 },
+  soon: { label: 'Next 3 days', tone: 'caution', order: 2 },
+  upcoming: { label: 'Next 7 days', tone: 'info', order: 3 },
+  ok: { label: 'Scheduled', tone: 'neutral', order: 4 },
+}
+
+/** Horizonte do feed de cobrancas no dashboard, em dias. */
+export const PAYMENT_HORIZON_DAYS = 7
+
+export const RENTAL_PLAN_META: Record<RentalPlan, { label: string; everyDaysLabel: string }> = {
+  weekly: { label: 'Weekly', everyDaysLabel: 'every 7 days' },
+  monthly: { label: 'Monthly', everyDaysLabel: 'every month' },
+}
 
 export const VEHICLE_STATUS_META: Record<VehicleStatus, { label: string; publicVisible: boolean }> =
   {
