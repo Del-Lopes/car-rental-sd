@@ -34,13 +34,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const displayName = profile.full_name ?? profile.email ?? 'Account'
 
+  // Para o cliente, o logo leva de volta ao site (a frota); o admin trabalha
+  // dentro do painel, entao para ele o logo volta ao overview.
+  const logoHref = isAdmin ? '/dashboard' : '/'
+
   return (
     <div className="flex min-h-dvh flex-col">
       <PreviewBanner />
       <div className="flex flex-1">
         <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
           <div className="flex h-16 items-center px-5">
-            <BrandMark size="sm" href="/dashboard" />
+            <BrandMark size="sm" href={logoHref} />
           </div>
           <div className="flex-1 px-3 py-4">
             <p className="eyebrow mb-3 px-3 text-[0.6rem] text-muted-foreground">
@@ -54,7 +58,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-md">
             <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
               <span className="lg:hidden">
-                <BrandMark size="sm" href="/dashboard" />
+                <BrandMark size="sm" href={logoHref} />
               </span>
               <span className="hidden text-sm text-muted-foreground lg:block">
                 {isAdmin ? 'Admin' : 'Customer'} · {displayName}
