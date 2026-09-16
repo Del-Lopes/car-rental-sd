@@ -4,6 +4,7 @@ import { CarFrontIcon, PlusIcon } from 'lucide-react'
 
 import { PageHeader } from '@/components/dashboard/page-header'
 import { UrgencyBadge, VehicleStatusBadge } from '@/components/dashboard/status-badges'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { VehicleImage } from '@/components/site/vehicle-image'
 import { buttonVariants } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -15,12 +16,26 @@ import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Vehicles' }
 
-export default async function VehiclesPage() {
+export default async function VehiclesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ deleted?: string }>
+}) {
   await requireAdmin()
-  const vehicles = await listVehiclesForAdmin()
+  const [vehicles, { deleted }] = await Promise.all([listVehiclesForAdmin(), searchParams])
 
   return (
     <>
+      {deleted && (
+        <Alert className={cn('mb-6', deleted === 'partial' ? 'border-amber-500/30 bg-amber-500/10' : 'border-brand/30 bg-brand/5')}>
+          <AlertDescription>
+            {deleted === 'partial'
+              ? 'Vehicle deleted, but some files could not be removed from storage. They take up space but do not affect the site.'
+              : 'Vehicle deleted, along with its photos and files.'}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <PageHeader
         title="Vehicles"
         description={`${vehicles.length} ${vehicles.length === 1 ? 'vehicle' : 'vehicles'} in the fleet`}

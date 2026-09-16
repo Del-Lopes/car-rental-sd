@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArchiveIcon, ExternalLinkIcon } from 'lucide-react'
+import { ArchiveIcon, ExternalLinkIcon, Trash2Icon } from 'lucide-react'
 
 import { ConfirmActionButton } from '@/components/dashboard/confirm-action-button'
 import { PageHeader } from '@/components/dashboard/page-header'
@@ -12,7 +12,7 @@ import { VehicleForm } from '@/components/dashboard/vehicle-form'
 import { VehiclePhotos } from '@/components/dashboard/vehicle-photos'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { buttonVariants } from '@/components/ui/button'
-import { archiveVehicleAction, updateVehicleAction } from '@/lib/actions/vehicles'
+import { archiveVehicleAction, deleteVehicleAction, updateVehicleAction } from '@/lib/actions/vehicles'
 import { requireAdmin } from '@/lib/auth'
 import { listCustomers } from '@/lib/data/customers'
 import { getVehicleCategories } from '@/lib/data/lookups'
@@ -92,6 +92,17 @@ export default async function EditVehiclePage({
                 Archive
               </ConfirmActionButton>
             )}
+            <ConfirmActionButton
+              action={deleteVehicleAction.bind(null, vehicle.id)}
+              title="Delete this vehicle permanently?"
+              description={`${vehicleTitle(vehicle)} will be removed along with ${photos.length} ${photos.length === 1 ? 'photo' : 'photos'} and its registration files. This cannot be undone. Vehicles with rental history can only be archived.`}
+              confirmLabel="Delete permanently"
+              variant="destructive"
+              className="h-9 px-3"
+            >
+              <Trash2Icon />
+              Delete
+            </ConfirmActionButton>
           </>
         }
       />

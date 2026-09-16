@@ -46,6 +46,9 @@ export function ConfirmActionButton({
   const confirm = () =>
     startTransition(async () => {
       const result = await action()
+      // Action que redireciona (ex.: excluir o registro da propria pagina) nao
+      // devolve resultado: a navegacao ja esta em curso.
+      if (!result) return
       if (result.ok) {
         toast.success(result.message ?? 'Done')
         setOpen(false)
