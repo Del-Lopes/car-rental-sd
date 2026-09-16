@@ -8,13 +8,21 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { ActionResult } from '@/lib/actions/result'
 import { FUEL_LABELS, TRANSMISSION_LABELS, VEHICLE_STATUS_META } from '@/lib/constants'
+import { STANDARD_SECURITY_DEPOSIT } from '@/lib/rental-terms'
 import type { Vehicle, VehicleCategory } from '@/lib/types/database'
 
 type Action = (state: ActionResult, formData: FormData) => Promise<ActionResult>
 
 /** Converte o veiculo salvo para o formato de valores do formulario. */
 function toValues(vehicle?: Vehicle): Record<string, string> {
-  if (!vehicle) return { status: 'available', transmission: 'automatic' }
+  // Carro novo ja nasce com a caucao padrao do cliente; continua editavel.
+  if (!vehicle) {
+    return {
+      status: 'available',
+      transmission: 'automatic',
+      security_deposit: String(STANDARD_SECURITY_DEPOSIT),
+    }
+  }
   return Object.fromEntries(
     Object.entries(vehicle).map(([key, value]) => [
       key,

@@ -20,4 +20,5 @@ export const SITE_CONFIG = {
 export const PUBLIC_NAV = [
   { href: '/#fleet', label: 'Fleet' },
   { href: '/#how-it-works', label: 'How it works' },
+  { href: '/#rental-terms', label: 'Rental terms' },
 ] as const

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeftIcon, CheckIcon, ShieldCheckIcon } from 'lucide-react'
 
+import { RentalTerms } from '@/components/site/rental-terms'
 import { VehicleCard } from '@/components/site/vehicle-card'
 import { VehicleGallery } from '@/components/site/vehicle-gallery'
 import { buttonVariants } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { getCurrentProfile } from '@/lib/auth'
 import { FUEL_LABELS, TRANSMISSION_LABELS } from '@/lib/constants'
 import { getPublicVehicle, listPublicVehicles, sortedPhotos } from '@/lib/data/vehicles'
 import { formatCurrency, formatMileage, vehicleTitle } from '@/lib/format'
+import { SERVICE_AREA } from '@/lib/rental-terms'
 import { vehiclePhotoUrl } from '@/lib/storage-url'
 import { cn } from '@/lib/utils'
 
@@ -21,7 +23,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   if (!vehicle) return { title: 'Vehicle not found' }
 
   const title = vehicleTitle(vehicle)
-  const description = `${title} for rent from ${formatCurrency(vehicle.weekly_rate)}/week or ${formatCurrency(vehicle.monthly_rate)}/month. Unlimited mileage.`
+  const description = `${title} for rent from ${formatCurrency(vehicle.weekly_rate)}/week or ${formatCurrency(vehicle.monthly_rate)}/month. Unlimited mileage within ${SERVICE_AREA}.`
 
   return {
     title,
@@ -122,7 +124,7 @@ export default async function VehicleDetailPage({ params }: { params: Params }) 
               )}
               <li className="flex items-center gap-2 text-muted-foreground">
                 <CheckIcon className="size-4 text-brand" />
-                Unlimited mileage
+                Unlimited mileage within {SERVICE_AREA}
               </li>
             </ul>
 
@@ -149,6 +151,9 @@ export default async function VehicleDetailPage({ params }: { params: Params }) 
               Our team reviews them and gets in touch to arrange the rental.
             </p>
           </div>
+
+          {/* O quadro acima ja mostra a caucao deste carro; o bloco omite a linha generica. */}
+          <RentalTerms variant="compact" />
         </aside>
       </div>
 

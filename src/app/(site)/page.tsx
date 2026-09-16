@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { CarFrontIcon, FileCheck2Icon, KeyRoundIcon, SearchXIcon } from 'lucide-react'
 
+import { RentalTerms } from '@/components/site/rental-terms'
 import { VehicleCard } from '@/components/site/vehicle-card'
 import { VehicleFilters } from '@/components/site/vehicle-filters'
 import { buttonVariants } from '@/components/ui/button'
 import { listPublicVehicles } from '@/lib/data/vehicles'
 import { getVehicleCategories } from '@/lib/data/lookups'
 import { formatCurrency } from '@/lib/format'
+import { SERVICE_AREA } from '@/lib/rental-terms'
 import { SITE_CONFIG } from '@/lib/site'
 import { cn } from '@/lib/utils'
 import { vehicleFilterSchema, type VehicleFilters as Filters } from '@/lib/validation/vehicle'
@@ -75,7 +77,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             </h1>
             <p className="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               Well-kept sedans, SUVs, wagons and minivans with clear pricing — no daily
-              surprises and no mileage caps.
+              surprises and unlimited mileage across {SERVICE_AREA}.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="#fleet" className={cn(buttonVariants(), 'h-11 px-5 text-sm')}>
@@ -93,7 +95,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border">
             <HeroStat label="Starting at" value={lowestWeekly !== null ? `${formatCurrency(lowestWeekly)}` : '—'} hint="per week" />
             <HeroStat label="Vehicles" value={String(allVehicles.length)} hint="available now" />
-            <HeroStat label="Mileage" value="Unlimited" hint="no caps, ever" />
+            <HeroStat label="Mileage" value="Unlimited" hint={`within ${SERVICE_AREA}`} />
             <HeroStat label="Plans" value="Flexible" hint="weekly or monthly" />
           </dl>
         </div>
@@ -174,7 +176,23 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
               </li>
             ))}
           </ol>
+        </div>
+      </section>
 
+      {/* -------------------------------------------------- rental terms */}
+      <section id="rental-terms" className="scroll-mt-20 border-t border-border/60">
+        <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-14 sm:px-6 sm:py-20">
+          <div className="max-w-2xl space-y-2">
+            <p className="eyebrow text-brand">Rental terms</p>
+            <h2 className="text-3xl font-semibold tracking-tight">Know before you rent</h2>
+            <p className="text-muted-foreground">
+              Simple rules, stated up front. Please read them before creating your account.
+            </p>
+          </div>
+
+          <RentalTerms />
+
+          {/* Chamada depois das regras: quem clica ja leu as condicoes. */}
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-brand/30 bg-brand/5 p-6">
             <div className="space-y-1">
               <p className="font-semibold">Ready when you are</p>
