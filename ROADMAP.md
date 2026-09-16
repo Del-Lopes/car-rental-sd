@@ -19,7 +19,7 @@ Os Sprints 0 a 4 estão entregues e rodando com banco real. O Sprint 5 (QA) est�
 | 3 — Dashboard + Clientes | ✅ Entregue | Vencimentos com semáforo, lista de clientes, revisão de documentos |
 | 4 — Área do cliente | ✅ Entregue | Upload, status, reenvio após recusa, perfil e senha |
 | 5 — QA e handoff | 🔄 Em andamento | Roteiro de testes em execução pelo cliente |
-| **Extra — Locações e cobranças** | ✅ Código pronto | Controle manual de aluguéis com vencimento de parcela no dashboard. **Falta aplicar a migration no banco** |
+| **Extra — Locações e cobranças** | ✅ Entregue | Controle manual de aluguéis com vencimento de parcela no dashboard. Migration aplicada em 16/09 |
 
 ### Módulo de locações (fora do escopo original da Fase 1)
 
@@ -42,8 +42,11 @@ Admin: carentaldev@gmail.com (Flavio Gongola).
 
 | Item | Situação |
 |---|---|
-| `NEXT_PUBLIC_SITE_URL` | **Ainda não aplicada** (o sitemap sai com localhost). Na Vercel, criar como tipo "Config" com `https://carentalsd.vercel.app` e redeploy |
-| URLs do Supabase Auth | Foram configuradas com o domínio antigo; precisam apontar para carentalsd.vercel.app |
+| Upload > 4,5 MB | **Não resolvido.** Limite da Vercel para Server Actions, abaixo dos 10 MB anunciados. Correção: upload direto ao Storage |
+| Política de privacidade | **Bloqueia o go-live.** O sistema guarda CNH e comprovante de endereço; não há páginas de privacidade/termos nem link no rodapé |
+| Backup do banco | Plano free do Supabase tem backup limitado. Com documentos de clientes reais, vale o Pro (US$ 25/mês) |
+| E-mail transacional | SMTP padrão do Supabase tem limite de poucos envios/hora; produção pede SMTP próprio |
+| Teste de upload do cliente | Nenhum documento de locatário foi enviado ainda (0 registros) — é o fluxo com maior risco em aberto |
 | Upload > 4,5 MB | Limite da Vercel para Server Actions, abaixo dos 10 MB anunciados. Correção: upload direto ao Storage |
 | E-mail transacional | SMTP padrão do Supabase tem limite baixo; produção pede SMTP próprio |
 | Cliente | Fotos reais, textos e contato, domínio próprio, política de privacidade (Kira) |
