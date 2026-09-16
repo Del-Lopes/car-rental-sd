@@ -28,6 +28,11 @@ export function SiteFooter() {
               </li>
             ))}
             <li>
+              <Link href="/terms" className="text-muted-foreground hover:text-foreground">
+                Full rental terms
+              </Link>
+            </li>
+            <li>
               <Link href="/register" className="text-muted-foreground hover:text-foreground">
                 Create account
               </Link>

@@ -19,6 +19,19 @@ export type DocumentUrgency = 'expired' | 'critical' | 'warning' | 'upcoming' | 
 
 export type RentalPlan = 'weekly' | 'monthly'
 export type RentalStatus = 'active' | 'closed'
+export type AgreementStatus = 'pending' | 'signed'
+
+/** Dados do aluguel congelados no momento da assinatura do contrato. */
+export type RentalSnapshot = {
+  vehicle: string
+  plate: string | null
+  plan: RentalPlan
+  rate_amount: number
+  deposit_amount: number | null
+  started_on: string
+  next_due_on: string
+  renter: string | null
+}
 
 /** Faixas do semaforo das cobrancas (view v_rental_due). */
 export type PaymentUrgency = 'overdue' | 'due_today' | 'soon' | 'upcoming' | 'ok'
@@ -210,6 +223,39 @@ export interface Database {
         }>
         Relationships: []
       }
+      terms_versions: {
+        Row: {
+          id: string
+          version: number
+          body: string
+          created_by: string | null
+          created_at: string
+        }
+        // Versao, autor e data sao definidos pelo banco.
+        Insert: { body: string }
+        Update: Record<PropertyKey, never>
+        Relationships: []
+      }
+      rental_agreements: {
+        Row: {
+          id: string
+          rental_id: string
+          customer_id: string | null
+          status: AgreementStatus
+          terms_version_id: string | null
+          rental_snapshot: RentalSnapshot | null
+          signed_name: string | null
+          signed_at: string | null
+          signer_ip: string | null
+          signer_user_agent: string | null
+          email_sent_at: string | null
+          created_at: string
+        }
+        // Criado por trigger e assinado por funcao: a API nao grava direto.
+        Insert: Record<PropertyKey, never>
+        Update: { email_sent_at?: string | null }
+        Relationships: []
+      }
       rentals: {
         Row: {
           id: string
@@ -328,6 +374,43 @@ export interface Database {
           rentals_active: number
           payments_overdue: number
           payments_due_soon: number
+          agreements_pending: number
+        }
+        Relationships: []
+      }
+      v_current_terms: {
+        Row: {
+          id: string
+          version: number
+          body: string
+          created_by: string | null
+          created_at: string
+        }
+        Relationships: []
+      }
+      v_rental_agreements: {
+        Row: {
+          id: string
+          rental_id: string
+          customer_id: string | null
+          status: AgreementStatus
+          signed_at: string | null
+          signed_name: string | null
+          signer_ip: string | null
+          email_sent_at: string | null
+          created_at: string
+          rental_snapshot: RentalSnapshot | null
+          terms_version_id: string | null
+          terms_version: number | null
+          customer_name: string | null
+          customer_email: string | null
+          rental_status: RentalStatus
+          plan: RentalPlan
+          rate_amount: number
+          deposit_amount: number | null
+          started_on: string
+          vehicle_id: string
+          vehicle_label: string
         }
         Relationships: []
       }
@@ -372,6 +455,17 @@ export interface Database {
     }
     Functions: {
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      sign_rental_agreement: {
+        Args: {
+          p_agreement_id: string
+          p_customer_id: string
+          p_terms_version_id: string
+          p_signed_name: string
+          p_ip: string
+          p_user_agent: string
+        }
+        Returns: Database['public']['Tables']['rental_agreements']['Row']
+      }
       register_rental_payment: {
         Args: { p_rental_id: string; p_amount?: number | null; p_paid_on?: string }
         Returns: Database['public']['Tables']['rentals']['Row']
@@ -398,6 +492,9 @@ export type VehicleDocumentType = PublicSchema['Tables']['vehicle_document_types
 export type CustomerDocumentType = PublicSchema['Tables']['customer_document_types']['Row']
 
 export type ExpiringVehicleDocument = PublicSchema['Views']['v_expiring_vehicle_documents']['Row']
+export type TermsVersion = PublicSchema['Tables']['terms_versions']['Row']
+export type RentalAgreement = PublicSchema['Tables']['rental_agreements']['Row']
+export type RentalAgreementView = PublicSchema['Views']['v_rental_agreements']['Row']
 export type Rental = PublicSchema['Tables']['rentals']['Row']
 export type RentalPayment = PublicSchema['Tables']['rental_payments']['Row']
 export type RentalDue = PublicSchema['Views']['v_rental_due']['Row']

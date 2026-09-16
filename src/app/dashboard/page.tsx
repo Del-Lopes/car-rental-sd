@@ -7,6 +7,8 @@ import {
   CarFrontIcon,
   CheckCircle2Icon,
   FileClockIcon,
+  FileSignatureIcon,
+  ScrollTextIcon,
   UsersRoundIcon,
   WrenchIcon,
 } from 'lucide-react'
@@ -24,6 +26,7 @@ import {
   PAYMENT_URGENCY_META,
   RENTAL_PLAN_META,
 } from '@/lib/constants'
+import { getCurrentTerms } from '@/lib/data/agreements'
 import { getDashboardStats, getExpiringVehicleDocuments, groupByUrgency } from '@/lib/data/dashboard'
 import { listDueRentals } from '@/lib/data/rentals'
 import { formatCurrency, formatDate, formatDaysToExpire, formatMonthYear } from '@/lib/format'
@@ -37,10 +40,11 @@ export default async function DashboardHomePage() {
   // A area do cliente comeca pelos documentos; o overview e so do admin.
   if (profile.role !== 'admin') redirect('/dashboard/documents')
 
-  const [stats, expiring, dueRentals] = await Promise.all([
+  const [stats, expiring, dueRentals, currentTerms] = await Promise.all([
     getDashboardStats(),
     getExpiringVehicleDocuments(),
     listDueRentals(),
+    getCurrentTerms(),
   ])
   const groups = groupByUrgency(expiring)
   const firstName = profile.full_name?.split(' ')[0]
@@ -52,6 +56,37 @@ export default async function DashboardHomePage() {
         title={firstName ? `Hello, ${firstName}` : 'Overview'}
         description="Payments, registrations and the state of the fleet."
       />
+
+      {!currentTerms && (
+        <Link
+          href="/dashboard/terms"
+          className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm hover:border-amber-500/50"
+        >
+          <ScrollTextIcon className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span className="flex-1">
+            <strong className="font-semibold">Publish your rental terms.</strong> Customers can&apos;t sign
+            rental agreements until the first version is published.
+          </span>
+          <span className="text-xs font-medium">Set up terms →</span>
+        </Link>
+      )}
+
+      {stats.agreements_pending > 0 && (
+        <Link
+          href="/dashboard/agreements"
+          className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 text-sm hover:border-brand/40"
+        >
+          <FileSignatureIcon className="size-4 shrink-0 text-brand" />
+          <span className="flex-1">
+            <strong className="font-semibold">
+              {stats.agreements_pending}{' '}
+              {stats.agreements_pending === 1 ? 'rental agreement is' : 'rental agreements are'} awaiting
+              customer signature.
+            </strong>
+          </span>
+          <span className="text-xs font-medium text-brand">View →</span>
+        </Link>
+      )}
 
       {overduePayments.length > 0 && (
         <div

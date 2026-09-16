@@ -1,6 +1,7 @@
 'use client'
 
-import { CalendarClockIcon, CircleUserRoundIcon, HandCoinsIcon, SquarePenIcon } from 'lucide-react'
+import Link from 'next/link'
+import { CalendarClockIcon, CircleUserRoundIcon, FileSignatureIcon, HandCoinsIcon, SquarePenIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { ConfirmActionButton } from '@/components/dashboard/confirm-action-button'
@@ -20,6 +21,9 @@ import { daysUntil } from '@/lib/expiry'
 import type { RentalDue, RentalPayment, RentalPlan } from '@/lib/types/database'
 
 export type RentalCustomerOption = { id: string; name: string }
+
+/** Situacao do contrato da locacao ativa, exibida para o admin. */
+export type RentalAgreementInfo = { id: string; status: 'pending' | 'signed'; signedAt: string | null } | null
 
 /** Data de hoje e a data do proximo vencimento sugerida para cada plano. */
 function today(): string {
@@ -41,6 +45,7 @@ export function RentalPanel({
   rental,
   payments,
   customers,
+  agreement = null,
 }: {
   vehicleId: string
   weeklyRate: number
@@ -49,9 +54,10 @@ export function RentalPanel({
   rental: RentalDue | null
   payments: RentalPayment[]
   customers: RentalCustomerOption[]
+  agreement?: RentalAgreementInfo
 }) {
   if (rental) {
-    return <ActiveRental rental={rental} payments={payments} />
+    return <ActiveRental rental={rental} payments={payments} agreement={agreement} />
   }
   return (
     <StartRental
@@ -183,7 +189,15 @@ function StartRental({
   )
 }
 
-function ActiveRental({ rental, payments }: { rental: RentalDue; payments: RentalPayment[] }) {
+function ActiveRental({
+  rental,
+  payments,
+  agreement,
+}: {
+  rental: RentalDue
+  payments: RentalPayment[]
+  agreement: RentalAgreementInfo
+}) {
   const { formAction, onSubmit, values, errors } = useFormAction(updateRentalAction, {
     rate_amount: String(rental.rate_amount),
     next_due_on: rental.next_due_on,
@@ -219,6 +233,8 @@ function ActiveRental({ rental, payments }: { rental: RentalDue; payments: Renta
             value={rental.deposit_amount !== null ? formatCurrency(rental.deposit_amount) : '—'}
           />
         </dl>
+
+        <AgreementStatus hasCustomer={Boolean(rental.customer_id)} agreement={agreement} />
 
         <div className="flex flex-wrap gap-2">
           <RecordPaymentButton
@@ -284,6 +300,38 @@ function ActiveRental({ rental, payments }: { rental: RentalDue; payments: Renta
         </details>
       </CardContent>
     </Card>
+  )
+}
+
+function AgreementStatus({ hasCustomer, agreement }: { hasCustomer: boolean; agreement: RentalAgreementInfo }) {
+  if (!hasCustomer) {
+    return (
+      <p className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+        <FileSignatureIcon className="size-4 shrink-0" />
+        No online agreement: the renter has no account.
+      </p>
+    )
+  }
+  if (!agreement) return null
+
+  const signed = agreement.status === 'signed'
+  return (
+    <Link
+      href={`/dashboard/agreements/${agreement.id}`}
+      className={
+        signed
+          ? 'flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs hover:border-emerald-500/50'
+          : 'flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs hover:border-amber-500/50'
+      }
+    >
+      <FileSignatureIcon className={signed ? 'size-4 shrink-0 text-emerald-500' : 'size-4 shrink-0 text-amber-500'} />
+      <span className="flex-1">
+        {signed && agreement.signedAt
+          ? `Agreement signed on ${formatDate(agreement.signedAt.slice(0, 10))}`
+          : 'Agreement awaiting customer signature'}
+      </span>
+      <span className="font-medium">View →</span>
+    </Link>
   )
 }
 

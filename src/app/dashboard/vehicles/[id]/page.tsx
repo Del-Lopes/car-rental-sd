@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { buttonVariants } from '@/components/ui/button'
 import { archiveVehicleAction, deleteVehicleAction, updateVehicleAction } from '@/lib/actions/vehicles'
 import { requireAdmin } from '@/lib/auth'
+import { getAgreementForRental } from '@/lib/data/agreements'
 import { listCustomers } from '@/lib/data/customers'
 import { getVehicleCategories } from '@/lib/data/lookups'
 import { getActiveRentalForVehicle, listRentalPayments } from '@/lib/data/rentals'
@@ -49,7 +50,9 @@ export default async function EditVehiclePage({
 
   if (!vehicle) notFound()
 
-  const payments = rental ? await listRentalPayments(rental.id) : []
+  const [payments, agreement] = rental
+    ? await Promise.all([listRentalPayments(rental.id), getAgreementForRental(rental.id)])
+    : [[], null]
 
   const registration = currentDocument(vehicle.vehicle_documents, 'registration')
   const days = registration?.expires_at ? daysUntil(registration.expires_at) : null
@@ -133,6 +136,7 @@ export default async function EditVehiclePage({
             securityDeposit={vehicle.security_deposit}
             rental={rental}
             payments={payments}
+            agreement={agreement && { id: agreement.id, status: agreement.status, signedAt: agreement.signed_at }}
             customers={customers.map((customer) => ({
               id: customer.profile_id,
               name: customer.full_name ?? customer.email ?? 'Customer',

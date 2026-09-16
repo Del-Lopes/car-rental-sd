@@ -192,6 +192,14 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
           <RentalTerms />
 
+          <p className="text-sm text-muted-foreground">
+            This is a summary. Every rental is signed under our{' '}
+            <Link href="/terms" className="font-medium text-brand hover:underline">
+              full rental terms
+            </Link>
+            .
+          </p>
+
           {/* Chamada depois das regras: quem clica ja leu as condicoes. */}
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-brand/30 bg-brand/5 p-6">
             <div className="space-y-1">

@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   CarFrontIcon,
+  FileSignatureIcon,
   FileTextIcon,
+  ScrollTextIcon,
   LayoutDashboardIcon,
   UserRoundIcon,
   UsersRoundIcon,
@@ -15,16 +17,19 @@ import type { UserRole } from '@/lib/types/database'
 import { cn } from '@/lib/utils'
 
 type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean; badgeKey?: BadgeKey }
-type BadgeKey = 'overview' | 'customers'
+type BadgeKey = 'overview' | 'customers' | 'agreements'
 
 const NAV: Record<UserRole, NavItem[]> = {
   admin: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboardIcon, exact: true, badgeKey: 'overview' },
     { href: '/dashboard/vehicles', label: 'Vehicles', icon: CarFrontIcon },
     { href: '/dashboard/customers', label: 'Customers', icon: UsersRoundIcon, badgeKey: 'customers' },
+    { href: '/dashboard/agreements', label: 'Agreements', icon: FileSignatureIcon, badgeKey: 'agreements' },
+    { href: '/dashboard/terms', label: 'Terms', icon: ScrollTextIcon },
     { href: '/dashboard/account', label: 'Account', icon: UserRoundIcon },
   ],
   customer: [
+    { href: '/dashboard/agreements', label: 'Agreements', icon: FileSignatureIcon, badgeKey: 'agreements' },
     { href: '/dashboard/documents', label: 'My documents', icon: FileTextIcon },
     { href: '/dashboard/account', label: 'Account', icon: UserRoundIcon },
   ],

@@ -12,7 +12,9 @@ import type {
   Rental,
   RentalDue,
   RentalPayment,
+  RentalAgreementView,
   RentalPlan,
+  TermsVersion,
   Vehicle,
   VehicleCategory,
   VehicleDocument,
@@ -306,5 +308,74 @@ export function fixtureDashboardStats(): AdminDashboardStats {
     rentals_active: fixtureRentals.length,
     payments_overdue: due.filter((d) => d.urgency === 'overdue').length,
     payments_due_soon: due.filter((d) => ['due_today', 'soon', 'upcoming'].includes(d.urgency)).length,
+    agreements_pending: fixtureAgreements().filter((a) => a.status === 'pending').length,
   }
+}
+
+// ---------------------------------------------------------- termos e contratos
+
+export const fixtureTerms: TermsVersion = {
+  id: 'f1000000-0000-4000-8000-000000000001',
+  version: 1,
+  body: [
+    'CARENTAL RENTAL AGREEMENT — SAMPLE TERMS',
+    'This is sample text shown in preview mode. The admin publishes the real terms in Dashboard > Terms.',
+    '1. The renter must hold a valid driver’s license for the entire rental period.',
+    '2. A refundable security deposit is collected before the vehicle is released.',
+    '3. The vehicle may only be driven within San Diego County.',
+    '4. Insurance covers third-party liability only.',
+  ].join('\n\n'),
+  created_by: null,
+  created_at: daysAgo(3),
+}
+
+/**
+ * Um contrato pendente e um assinado, ligados as locacoes de clientes
+ * cadastrados. O pendente fica com o cliente usado na area do cliente do
+ * preview, para a tela de assinatura ter o que mostrar.
+ */
+export function fixtureAgreements(): RentalAgreementView[] {
+  const due = fixtureRentalDue()
+  return fixtureRentals
+    .filter((rental) => rental.customer_id)
+    .map((rental, index) => {
+      const view = due.find((item) => item.id === rental.id)!
+      const signed = index === 1
+      const customer = fixtureCustomers.find((item) => item.id === rental.customer_id)
+      return {
+        id: `f2000000-0000-4000-8000-00000000000${index + 1}`,
+        rental_id: rental.id,
+        // O pendente e atribuido ao cliente que o preview usa na area do cliente.
+        customer_id: signed ? rental.customer_id : fixtureCustomers[2].id,
+        status: signed ? 'signed' : 'pending',
+        signed_at: signed ? daysAgo(5) : null,
+        signed_name: signed ? (customer?.full_name ?? null) : null,
+        signer_ip: signed ? '203.0.113.24' : null,
+        email_sent_at: signed ? daysAgo(5) : null,
+        created_at: daysAgo(6),
+        rental_snapshot: signed
+          ? {
+              vehicle: `${view.year} ${view.make} ${view.model}`,
+              plate: view.plate,
+              plan: rental.plan,
+              rate_amount: rental.rate_amount,
+              deposit_amount: rental.deposit_amount,
+              started_on: rental.started_on,
+              next_due_on: rental.next_due_on,
+              renter: customer?.full_name ?? null,
+            }
+          : null,
+        terms_version_id: signed ? fixtureTerms.id : null,
+        terms_version: signed ? fixtureTerms.version : null,
+        customer_name: signed ? (customer?.full_name ?? null) : fixtureCustomers[2].full_name,
+        customer_email: signed ? (customer?.email ?? null) : fixtureCustomers[2].email,
+        rental_status: rental.status,
+        plan: rental.plan,
+        rate_amount: rental.rate_amount,
+        deposit_amount: rental.deposit_amount,
+        started_on: rental.started_on,
+        vehicle_id: rental.vehicle_id,
+        vehicle_label: `${view.year} ${view.make} ${view.model}`,
+      }
+    })
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { AlertCircleIcon, CheckCircle2Icon, Clock3Icon, FileTextIcon, Trash2Icon } from 'lucide-react'
+import { AlertCircleIcon, CheckCircle2Icon, Clock3Icon, FileSignatureIcon, FileTextIcon, Trash2Icon } from 'lucide-react'
 
 import { ConfirmActionButton } from '@/components/dashboard/confirm-action-button'
 import { PageHeader } from '@/components/dashboard/page-header'
@@ -11,6 +11,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { deleteCustomerDocumentAction } from '@/lib/actions/documents'
 import { requireProfile } from '@/lib/auth'
+import { listAgreements, pendingAgreements } from '@/lib/data/agreements'
 import { buildDocumentChecklist, listMyDocuments } from '@/lib/data/customers'
 import { getCustomerDocumentTypes } from '@/lib/data/lookups'
 import { formatDate, formatDateTime } from '@/lib/format'
@@ -25,11 +26,13 @@ export default async function MyDocumentsPage({ searchParams }: { searchParams: 
   // a tela aberta para que ela possa ser vista.
   if (profile.role === 'admin' && !isPreviewMode()) redirect('/dashboard')
 
-  const [{ welcome }, types, documents] = await Promise.all([
+  const [{ welcome }, types, documents, agreements] = await Promise.all([
     searchParams,
     getCustomerDocumentTypes(),
     listMyDocuments(profile.id),
+    listAgreements(),
   ])
+  const pending = pendingAgreements(agreements)
 
   const checklist = buildDocumentChecklist(types, documents)
   const required = checklist.filter((item) => item.type.is_required)
@@ -41,6 +44,25 @@ export default async function MyDocumentsPage({ searchParams }: { searchParams: 
   return (
     <>
       <PageHeader title="My documents" description="We need these before you can rent a car." />
+
+      {/* O cliente costuma cair nesta pagina primeiro; contrato pendente nao pode passar batido. */}
+      {pending.length > 0 && (
+        <Link
+          href={pending.length === 1 ? `/dashboard/agreements/${pending[0].id}` : '/dashboard/agreements'}
+          className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-brand/40 bg-brand/10 p-4 text-sm hover:border-brand/60"
+        >
+          <FileSignatureIcon className="size-5 shrink-0 text-brand" />
+          <span className="flex-1">
+            <strong className="font-semibold">
+              {pending.length === 1 ? 'Your rental agreement is ready to sign' : `${pending.length} rental agreements are ready to sign`}
+            </strong>
+            <span className="block text-muted-foreground">
+              {pending.length === 1 ? pending[0].vehicle_label : 'Review and sign them to complete your rentals.'}
+            </span>
+          </span>
+          <span className="font-medium text-brand">Review and sign →</span>
+        </Link>
+      )}
 
       {welcome && !allSent && (
         <div className="mb-6 rounded-xl border border-brand/30 bg-brand/5 p-5">

@@ -18,6 +18,7 @@ const EMPTY_STATS: AdminDashboardStats = {
   rentals_active: 0,
   payments_overdue: 0,
   payments_due_soon: 0,
+  agreements_pending: 0,
 }
 
 /** Cards do topo do dashboard: uma linha, uma ida ao banco. */

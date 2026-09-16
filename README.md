@@ -93,6 +93,30 @@ npm run dev
 Confira a infraestrutura em <http://localhost:3000/api/health>: a rota lista
 tabela por tabela se o app consegue ler o banco.
 
+## Contratos e e-mail
+
+Fluxo: o admin publica os termos em **Dashboard > Terms** → registra uma locacao
+para um cliente cadastrado → um contrato pendente aparece para o cliente em
+**Agreements** → o cliente marca "li e aceito" e digita o nome → o banco grava a
+assinatura (versao dos termos, dados do aluguel, data/hora, IP, navegador) e o
+cliente recebe o contrato por e-mail, com copia para o Carental.
+
+Variaveis necessarias **na Vercel** (secretas, sem prefixo `NEXT_PUBLIC_`):
+
+| Variavel | Para que |
+|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | A assinatura roda no servidor para registrar o IP real; sem ela, assinar fica indisponivel |
+| `SMTP_USER` | `carentaldev@gmail.com` |
+| `SMTP_PASS` | Senha de app do Google (nao a senha da conta) |
+
+Senha de app do Gmail: ative a verificacao em 2 etapas na conta e gere a senha em
+<https://myaccount.google.com/apppasswords>. Sem SMTP o contrato e assinado
+normalmente; so o e-mail nao sai, e o admin pode reenviar depois pela tela do contrato.
+
+Dica: a mesma senha de app pode ser usada no Supabase em *Authentication >
+Emails > SMTP Settings* (host `smtp.gmail.com`, porta 465), o que tira os e-mails
+de cadastro e troca de senha do limite baixo do servidor padrao do Supabase.
+
 ## Comandos
 
 | Comando | O que faz |

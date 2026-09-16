@@ -6,6 +6,7 @@ import { BrandMark } from '@/components/site/brand-mark'
 import { PreviewBanner } from '@/components/site/preview-banner'
 import { ThemeToggle } from '@/components/site/theme-toggle'
 import { requireProfile } from '@/lib/auth'
+import { listAgreements, pendingAgreements } from '@/lib/data/agreements'
 import { getDashboardStats } from '@/lib/data/dashboard'
 
 export const metadata: Metadata = {
@@ -25,12 +26,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const profile = await requireProfile()
   const isAdmin = profile.role === 'admin'
 
-  // Os badges da navegacao so fazem sentido para o admin; o cliente nao paga
-  // essa consulta.
-  const stats = isAdmin ? await getDashboardStats() : null
-  const badges = stats
-    ? { overview: stats.vehicle_docs_expired, customers: stats.customer_docs_pending }
-    : {}
+  // Badges da navegacao: o que pede acao. Admin le os numeros agregados; o
+  // cliente so precisa saber se tem contrato esperando a assinatura dele.
+  const badges = isAdmin
+    ? await getDashboardStats().then((stats) => ({
+        overview: stats.vehicle_docs_expired,
+        customers: stats.customer_docs_pending,
+        agreements: stats.agreements_pending,
+      }))
+    : { agreements: pendingAgreements(await listAgreements()).length }
 
   const displayName = profile.full_name ?? profile.email ?? 'Account'
 
