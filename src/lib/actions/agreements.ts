@@ -69,6 +69,7 @@ export async function signAgreementAction(
     p_signed_name: parsed.data.signed_name,
     p_ip: ip,
     p_user_agent: userAgent,
+    p_insurance_choice: parsed.data.insurance_choice,
   })
 
   // As mensagens levantadas pelo banco ja sao escritas para o cliente ler.

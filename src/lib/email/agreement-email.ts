@@ -48,10 +48,26 @@ export function buildAgreementEmail(input: AgreementEmailInput) {
   const viewUrl = `${SITE_URL}/dashboard/agreements/${input.agreementId}`
   const signedAt = formatTimestamp(input.signedAt)
 
+  // Contratos assinados antes do recurso de seguro nao tem esses campos.
+  const insuranceRows: Array<[string, string]> = snapshot.insurance_choice
+    ? [
+        [
+          'Insurance',
+          snapshot.insurance_choice === 'carental'
+            ? `Carental insurance · ${formatCurrency(snapshot.insurance_amount ?? 0)}`
+            : 'Own insurance',
+        ],
+        ...(snapshot.total_amount !== undefined
+          ? ([[`Total (${plan.everyDaysLabel})`, formatCurrency(snapshot.total_amount)]] as Array<[string, string]>)
+          : []),
+      ]
+    : []
+
   const summaryRows: Array<[string, string]> = [
     ['Vehicle', snapshot.vehicle],
     ['Plan', plan.label],
-    [`Amount (${plan.everyDaysLabel})`, formatCurrency(snapshot.rate_amount)],
+    [`Rent (${plan.everyDaysLabel})`, formatCurrency(snapshot.rate_amount)],
+    ...insuranceRows,
     ['Security deposit', snapshot.deposit_amount !== null ? formatCurrency(snapshot.deposit_amount) : '—'],
     ['Start date', formatDate(snapshot.started_on)],
     ['Next payment due', formatDate(snapshot.next_due_on)],

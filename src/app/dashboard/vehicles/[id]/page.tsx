@@ -136,7 +136,14 @@ export default async function EditVehiclePage({
             securityDeposit={vehicle.security_deposit}
             rental={rental}
             payments={payments}
-            agreement={agreement && { id: agreement.id, status: agreement.status, signedAt: agreement.signed_at }}
+            agreement={
+              agreement && {
+                id: agreement.id,
+                status: agreement.status,
+                signedAt: agreement.signed_at,
+                insuranceChoice: agreement.insurance_choice,
+              }
+            }
             customers={customers.map((customer) => ({
               id: customer.profile_id,
               name: customer.full_name ?? customer.email ?? 'Customer',

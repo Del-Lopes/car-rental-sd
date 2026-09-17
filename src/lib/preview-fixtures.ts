@@ -244,6 +244,8 @@ export const fixtureRentals: Rental[] = rentalPlan.map(([vehicleIndex, dueOffset
   ended_on: null,
   status: 'active',
   notes: null,
+  insurance_offer_amount: index < 2 ? (plan === 'weekly' ? 20 : 87) : null,
+  insurance_amount: index === 1 ? 87 : 0,
   created_at: daysAgo(30 + index * 10),
   updated_at: iso,
 }))
@@ -273,6 +275,9 @@ export function fixtureRentalDue(): RentalDue[] {
         urgency: paymentUrgencyFor(days),
         last_paid_on: isoDate(-7),
         total_paid: rental.rate_amount * 2,
+        insurance_offer_amount: rental.insurance_offer_amount,
+        insurance_amount: rental.insurance_amount,
+        total_amount: rental.rate_amount + rental.insurance_amount,
       }
     })
     .sort((a, b) => a.days_to_due - b.days_to_due)
@@ -363,6 +368,10 @@ export function fixtureAgreements(): RentalAgreementView[] {
               started_on: rental.started_on,
               next_due_on: rental.next_due_on,
               renter: customer?.full_name ?? null,
+              insurance_choice: 'carental',
+              insurance_offer_amount: rental.insurance_offer_amount,
+              insurance_amount: rental.insurance_amount,
+              total_amount: rental.rate_amount + rental.insurance_amount,
             }
           : null,
         terms_version_id: signed ? fixtureTerms.id : null,
@@ -376,6 +385,9 @@ export function fixtureAgreements(): RentalAgreementView[] {
         started_on: rental.started_on,
         vehicle_id: rental.vehicle_id,
         vehicle_label: `${view.year} ${view.make} ${view.model}`,
+        insurance_choice: signed ? 'carental' : null,
+        insurance_offer_amount: rental.insurance_offer_amount,
+        insurance_amount: rental.insurance_amount,
       }
     })
 }

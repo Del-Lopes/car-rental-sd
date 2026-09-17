@@ -21,6 +21,9 @@ export type RentalPlan = 'weekly' | 'monthly'
 export type RentalStatus = 'active' | 'closed'
 export type AgreementStatus = 'pending' | 'signed'
 
+/** 'own': o locatario usa o proprio seguro. 'carental': incluido no seguro da Carental. */
+export type InsuranceChoice = 'own' | 'carental'
+
 /** Dados do aluguel congelados no momento da assinatura do contrato. */
 export type RentalSnapshot = {
   vehicle: string
@@ -31,6 +34,11 @@ export type RentalSnapshot = {
   started_on: string
   next_due_on: string
   renter: string | null
+  // Campos de seguro: ausentes em contratos assinados antes do recurso existir.
+  insurance_choice?: InsuranceChoice
+  insurance_offer_amount?: number | null
+  insurance_amount?: number
+  total_amount?: number
 }
 
 /** Faixas do semaforo das cobrancas (view v_rental_due). */
@@ -244,6 +252,7 @@ export interface Database {
           status: AgreementStatus
           terms_version_id: string | null
           rental_snapshot: RentalSnapshot | null
+          insurance_choice: InsuranceChoice | null
           signed_name: string | null
           signed_at: string | null
           signer_ip: string | null
@@ -270,6 +279,8 @@ export interface Database {
           ended_on: string | null
           status: RentalStatus
           notes: string | null
+          insurance_offer_amount: number | null
+          insurance_amount: number
           created_at: string
           updated_at: string
         }
@@ -286,6 +297,8 @@ export interface Database {
           ended_on?: string | null
           status?: RentalStatus
           notes?: string | null
+          insurance_offer_amount?: number | null
+          insurance_amount?: number
         }
         Update: Partial<Database['public']['Tables']['rentals']['Insert']>
         Relationships: []
@@ -411,6 +424,9 @@ export interface Database {
           started_on: string
           vehicle_id: string
           vehicle_label: string
+          insurance_choice: InsuranceChoice | null
+          insurance_offer_amount: number | null
+          insurance_amount: number
         }
         Relationships: []
       }
@@ -434,6 +450,10 @@ export interface Database {
           urgency: PaymentUrgency
           last_paid_on: string | null
           total_paid: number
+          insurance_offer_amount: number | null
+          insurance_amount: number
+          /** Aluguel + seguro aplicado: o que e cobrado por ciclo. */
+          total_amount: number
         }
         Relationships: []
       }
@@ -463,6 +483,7 @@ export interface Database {
           p_signed_name: string
           p_ip: string
           p_user_agent: string
+          p_insurance_choice: InsuranceChoice
         }
         Returns: Database['public']['Tables']['rental_agreements']['Row']
       }
@@ -473,6 +494,7 @@ export interface Database {
           p_signed_name: string
           p_ip: string
           p_user_agent: string
+          p_insurance_choice: InsuranceChoice
         }
         Returns: Database['public']['Tables']['rental_agreements']['Row']
       }

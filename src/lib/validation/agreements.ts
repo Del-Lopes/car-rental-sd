@@ -15,6 +15,7 @@ export const signAgreementSchema = z.object({
   terms_version_id: uuid,
   // Checkbox de HTML so envia "on" quando marcado.
   accepted: z.literal('on', { message: 'You must confirm that you read and agree to the terms' }),
+  insurance_choice: z.enum(['own', 'carental'], { message: 'Choose how this rental will be insured' }),
   signed_name: z
     .string()
     .trim()

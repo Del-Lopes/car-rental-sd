@@ -65,8 +65,12 @@ export const RESTRICTION_TERMS: RentalTerm[] = [
     detail: 'Trips or travel outside the area are not included.',
   },
   {
-    // Texto fiel ao do cliente: detalhar cobertura de seguro e decisao dele.
+    // Regra do cliente (19/09/2026): o locatario usa o proprio seguro ou e
+    // incluido no da Carental, com preco a partir de US$ 20/semana conforme a
+    // carteira de motorista. A cobertura segue a informada: so contra terceiros.
     title: 'Insurance: third-party liability only',
+    detail:
+      "Use your own insurance, or be added to Carental's policy from $20/week (price depends on your driver's license).",
     emphasis: true,
   },
 ]

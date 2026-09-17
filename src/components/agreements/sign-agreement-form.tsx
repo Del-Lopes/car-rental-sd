@@ -8,6 +8,7 @@ import { SubmitButton } from '@/components/forms/submit-button'
 import { useFormAction } from '@/components/forms/use-form-action'
 import { Input } from '@/components/ui/input'
 import { signAgreementAction } from '@/lib/actions/agreements'
+import { formatCurrency } from '@/lib/format'
 
 /**
  * Assinatura eletronica: marcar "li e aceito" + digitar o nome completo.
@@ -19,11 +20,19 @@ export function SignAgreementForm({
   termsVersionId,
   termsVersion,
   expectedName,
+  rentAmount,
+  insuranceOffer,
+  cycleLabel,
 }: {
   agreementId: string
   termsVersionId: string
   termsVersion: number
   expectedName: string
+  rentAmount: number
+  /** Valor para incluir o locatario no seguro da Carental; null = nao oferecido. */
+  insuranceOffer: number | null
+  /** "week" ou "month". */
+  cycleLabel: string
 }) {
   const { formAction, onSubmit, values, errors } = useFormAction(signAgreementAction)
 
@@ -31,6 +40,51 @@ export function SignAgreementForm({
     <form action={formAction} onSubmit={onSubmit} className="space-y-5" noValidate>
       <input type="hidden" name="agreement_id" value={agreementId} />
       <input type="hidden" name="terms_version_id" value={termsVersionId} />
+
+      {/* Todo locatario precisa de seguro: o proprio, ou incluido no da Carental. */}
+      <fieldset className="space-y-2" aria-describedby={errors.insurance_choice ? 'insurance-error' : undefined}>
+        <legend className="mb-2 text-sm font-medium">Insurance</legend>
+        <label className="flex items-start gap-3 rounded-lg border border-border p-4 text-sm has-[:checked]:border-brand/50 has-[:checked]:bg-brand/5">
+          <input
+            type="radio"
+            name="insurance_choice"
+            value="own"
+            defaultChecked={values.insurance_choice === 'own'}
+            className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]"
+          />
+          <span>
+            <span className="font-medium">I&apos;ll use my own insurance</span>
+            <span className="block text-muted-foreground">
+              Total per {cycleLabel}: {formatCurrency(rentAmount)}
+            </span>
+          </span>
+        </label>
+        {insuranceOffer !== null && (
+          <label className="flex items-start gap-3 rounded-lg border border-border p-4 text-sm has-[:checked]:border-brand/50 has-[:checked]:bg-brand/5">
+            <input
+              type="radio"
+              name="insurance_choice"
+              value="carental"
+              defaultChecked={values.insurance_choice === 'carental'}
+              className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]"
+            />
+            <span>
+              <span className="font-medium">
+                Add me to Carental&apos;s insurance · {formatCurrency(insuranceOffer)}/{cycleLabel}
+              </span>
+              <span className="block text-muted-foreground">
+                Price set for your driver profile. Total per {cycleLabel}:{' '}
+                {formatCurrency(rentAmount + insuranceOffer)}
+              </span>
+            </span>
+          </label>
+        )}
+        {errors.insurance_choice && (
+          <p id="insurance-error" role="alert" className="text-xs text-destructive">
+            {errors.insurance_choice[0]}
+          </p>
+        )}
+      </fieldset>
 
       <div className="space-y-1.5">
         <label className="flex items-start gap-3 rounded-lg border border-border p-4 text-sm has-[:checked]:border-brand/50 has-[:checked]:bg-brand/5">

@@ -31,12 +31,15 @@ import type { RentalPlan } from '@/lib/types/database'
 export function RecordPaymentButton({
   rentalId,
   amount,
+  insuranceAmount = 0,
   plan,
   dueOn,
   size = 'sm',
 }: {
   rentalId: string
+  /** Total esperado no ciclo: aluguel + seguro. */
   amount: number
+  insuranceAmount?: number
   plan: RentalPlan
   dueOn: string
   size?: 'sm' | 'default'
@@ -85,6 +88,12 @@ export function RecordPaymentButton({
           </div>
           <p className="text-xs text-muted-foreground">
             Expected for this cycle: {formatCurrency(amount)}
+            {Number(insuranceAmount) > 0 && (
+              <>
+                {' '}
+                (rent {formatCurrency(amount - Number(insuranceAmount))} + insurance {formatCurrency(insuranceAmount)})
+              </>
+            )}
           </p>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" type="button" />}>Cancel</DialogClose>

@@ -15,6 +15,9 @@ export const rentalFormSchema = z
     plan: z.enum(['weekly', 'monthly']),
     rate_amount: z.coerce.number().min(0, 'Amount cannot be negative').max(500_000),
     deposit_amount: optionalDecimal(0, 500_000),
+    // Valor oferecido para incluir o locatario no seguro da Carental, por ciclo.
+    // Vazio = nao oferecido; o locatario so pode usar o proprio seguro.
+    insurance_offer_amount: optionalDecimal(0, 50_000),
     started_on: dateString,
     next_due_on: dateString,
     notes: optionalText(500),
@@ -41,6 +44,9 @@ export const rentalPaymentSchema = z.object({
 export const rentalUpdateSchema = z.object({
   rental_id: uuid,
   rate_amount: z.coerce.number().min(0).max(500_000),
+  insurance_offer_amount: optionalDecimal(0, 50_000),
+  // Seguro efetivamente cobrado por ciclo (0 = locatario usa o proprio).
+  insurance_amount: z.coerce.number().min(0).max(50_000),
   next_due_on: dateString,
   notes: optionalText(500),
 })

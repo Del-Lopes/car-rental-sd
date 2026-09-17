@@ -90,6 +90,8 @@ export async function updateRentalAction(
     .from('rentals')
     .update({
       rate_amount: parsed.data.rate_amount,
+      insurance_offer_amount: parsed.data.insurance_offer_amount ?? null,
+      insurance_amount: parsed.data.insurance_amount,
       next_due_on: parsed.data.next_due_on,
       notes: parsed.data.notes ?? null,
     })

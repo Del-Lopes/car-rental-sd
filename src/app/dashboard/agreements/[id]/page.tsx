@@ -10,10 +10,11 @@ import { PageHeader } from '@/components/dashboard/page-header'
 import { ToneBadge } from '@/components/dashboard/status-badges'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { requireProfile } from '@/lib/auth'
-import { RENTAL_PLAN_META } from '@/lib/constants'
+import { INSURANCE_CHOICE_META, RENTAL_PLAN_META } from '@/lib/constants'
 import { getAgreement, getCurrentTerms, getTermsVersion } from '@/lib/data/agreements'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/format'
 import { isPreviewMode } from '@/lib/preview'
+import type { RentalAgreementView, RentalSnapshot } from '@/lib/types/database'
 
 export const metadata: Metadata = { title: 'Rental agreement' }
 
@@ -45,7 +46,8 @@ export default async function AgreementPage({ params, searchParams }: { params: 
     ['Vehicle', snapshot?.vehicle ?? agreement.vehicle_label],
     ['Renter', snapshot?.renter ?? agreement.customer_name ?? '—'],
     ['Plan', plan.label],
-    [`Amount (${plan.everyDaysLabel})`, formatCurrency(snapshot?.rate_amount ?? agreement.rate_amount)],
+    [`Rent (${plan.everyDaysLabel})`, formatCurrency(snapshot?.rate_amount ?? agreement.rate_amount)],
+    ...insuranceRows(agreement, snapshot),
     [
       'Security deposit',
       (snapshot?.deposit_amount ?? agreement.deposit_amount) !== null
@@ -123,6 +125,11 @@ export default async function AgreementPage({ params, searchParams }: { params: 
                     termsVersionId={terms.id}
                     termsVersion={terms.version}
                     expectedName={profile.full_name}
+                    rentAmount={Number(agreement.rate_amount)}
+                    insuranceOffer={
+                      agreement.insurance_offer_amount !== null ? Number(agreement.insurance_offer_amount) : null
+                    }
+                    cycleLabel={agreement.plan === 'weekly' ? 'week' : 'month'}
                   />
                 ) : (
                   <p className="text-sm">
@@ -214,4 +221,30 @@ export default async function AgreementPage({ params, searchParams }: { params: 
       </div>
     </>
   )
+}
+
+/**
+ * Linhas de seguro do resumo. Assinado: o que ficou congelado no contrato.
+ * Pendente: a oferta que o locatario vai ver na hora de escolher.
+ */
+function insuranceRows(agreement: RentalAgreementView, snapshot: RentalSnapshot | null): Array<[string, string]> {
+  if (snapshot?.insurance_choice) {
+    const rows: Array<[string, string]> = [
+      [
+        'Insurance',
+        snapshot.insurance_choice === 'carental'
+          ? `Carental · ${formatCurrency(snapshot.insurance_amount ?? 0)}`
+          : INSURANCE_CHOICE_META.own.label,
+      ],
+    ]
+    if (snapshot.total_amount !== undefined) rows.push(['Total per cycle', formatCurrency(snapshot.total_amount)])
+    return rows
+  }
+  if (agreement.status === 'signed') return []
+  return [
+    [
+      'Carental insurance offer',
+      agreement.insurance_offer_amount !== null ? formatCurrency(agreement.insurance_offer_amount) : 'Not offered',
+    ],
+  ]
 }

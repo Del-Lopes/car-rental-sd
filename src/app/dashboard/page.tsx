@@ -106,7 +106,7 @@ export default async function DashboardHomePage() {
               {overduePayments.length}{' '}
               {overduePayments.length === 1 ? 'payment is overdue' : 'payments are overdue'}.
             </strong>{' '}
-            Total expected: {formatCurrency(overduePayments.reduce((sum, r) => sum + Number(r.rate_amount), 0))}.
+            Total expected: {formatCurrency(overduePayments.reduce((sum, r) => sum + Number(r.total_amount), 0))}.
           </span>
         </div>
       )}
@@ -194,7 +194,14 @@ export default async function DashboardHomePage() {
                     </TableCell>
                     <TableCell>{rental.renter}</TableCell>
                     <TableCell className="hidden sm:table-cell">{RENTAL_PLAN_META[rental.plan].label}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatCurrency(rental.rate_amount)}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatCurrency(rental.total_amount)}
+                      {Number(rental.insurance_amount) > 0 && (
+                        <span className="block text-xs text-muted-foreground">
+                          incl. {formatCurrency(rental.insurance_amount)} insurance
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="tabular-nums">{formatDate(rental.next_due_on)}</span>
@@ -211,7 +218,8 @@ export default async function DashboardHomePage() {
                     <TableCell className="pr-6 text-right">
                       <RecordPaymentButton
                         rentalId={rental.id}
-                        amount={rental.rate_amount}
+                        amount={rental.total_amount}
+                        insuranceAmount={rental.insurance_amount}
                         plan={rental.plan}
                         dueOn={rental.next_due_on}
                       />

@@ -2,6 +2,7 @@ import type {
   DocumentStatus,
   DocumentUrgency,
   Fuel,
+  InsuranceChoice,
   PaymentUrgency,
   RentalPlan,
   Transmission,
@@ -52,6 +53,22 @@ export const PAYMENT_URGENCY_META: Record<
 
 /** Horizonte do feed de cobrancas no dashboard, em dias. */
 export const PAYMENT_HORIZON_DAYS = 7
+
+/**
+ * Valor sugerido para incluir o locatario no seguro da Carental, por ciclo do
+ * plano. Referencia do cliente: "a partir de US$ 20/semana", variando conforme a
+ * carteira de motorista -- por isso e so sugestao, o dono ajusta por locacao.
+ * Mensal: 20 x 52 semanas / 12 meses = 86,67, arredondado.
+ */
+export const INSURANCE_SUGGESTED_OFFER: Record<RentalPlan, number> = {
+  weekly: 20,
+  monthly: 87,
+}
+
+export const INSURANCE_CHOICE_META: Record<InsuranceChoice, { label: string }> = {
+  own: { label: 'Own insurance' },
+  carental: { label: 'Carental insurance' },
+}
 
 export const RENTAL_PLAN_META: Record<RentalPlan, { label: string; everyDaysLabel: string }> = {
   weekly: { label: 'Weekly', everyDaysLabel: 'every 7 days' },

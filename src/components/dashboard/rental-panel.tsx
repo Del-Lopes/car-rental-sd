@@ -1,7 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { CalendarClockIcon, CircleUserRoundIcon, FileSignatureIcon, HandCoinsIcon, SquarePenIcon } from 'lucide-react'
+import {
+  CalendarClockIcon,
+  CircleUserRoundIcon,
+  FileSignatureIcon,
+  HandCoinsIcon,
+  ShieldCheckIcon,
+  SquarePenIcon,
+} from 'lucide-react'
 import { useState } from 'react'
 
 import { ConfirmActionButton } from '@/components/dashboard/confirm-action-button'
@@ -14,16 +21,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { closeRentalAction, startRentalAction, updateRentalAction } from '@/lib/actions/rentals'
-import { RENTAL_PLAN_META } from '@/lib/constants'
+import { INSURANCE_SUGGESTED_OFFER, RENTAL_PLAN_META } from '@/lib/constants'
 import { paymentUrgencyFor } from '@/lib/expiry'
 import { formatCurrency, formatDate, formatDaysToExpire } from '@/lib/format'
 import { daysUntil } from '@/lib/expiry'
-import type { RentalDue, RentalPayment, RentalPlan } from '@/lib/types/database'
+import type { InsuranceChoice, RentalDue, RentalPayment, RentalPlan } from '@/lib/types/database'
 
 export type RentalCustomerOption = { id: string; name: string }
 
 /** Situacao do contrato da locacao ativa, exibida para o admin. */
-export type RentalAgreementInfo = { id: string; status: 'pending' | 'signed'; signedAt: string | null } | null
+export type RentalAgreementInfo = {
+  id: string
+  status: 'pending' | 'signed'
+  signedAt: string | null
+  insuranceChoice: InsuranceChoice | null
+} | null
+
+/** Situacao do seguro, do jeito que o dono precisa ler no painel. */
+function insuranceLabel(rental: RentalDue, agreement: RentalAgreementInfo): string {
+  if (Number(rental.insurance_amount) > 0) return `Carental · ${formatCurrency(rental.insurance_amount)}`
+  if (agreement?.insuranceChoice === 'own') return 'Own insurance'
+  if (agreement?.status === 'pending') {
+    return rental.insurance_offer_amount !== null
+      ? `Renter to choose (offer ${formatCurrency(rental.insurance_offer_amount)})`
+      : 'Renter to choose (own only)'
+  }
+  return 'Not set'
+}
 
 /** Data de hoje e a data do proximo vencimento sugerida para cada plano. */
 function today(): string {
@@ -176,6 +200,31 @@ function StartRental({
             </Field>
           </div>
 
+          {/* O preco do seguro depende da carteira de cada motorista: e sugestao,
+              e quem decide usar (ou nao) e o locatario, ao assinar o contrato. */}
+          <Field
+            label={`Carental insurance offer (per ${plan === 'weekly' ? 'week' : 'month'})`}
+            name="insurance_offer_amount"
+            error={errors.insurance_offer_amount}
+            hint={
+              customerId
+                ? "Price for this driver if they don't have their own insurance. The renter chooses when signing. Leave empty if not offered."
+                : 'Renter has no account, so there is no online choice. Set the charged amount later in "Correct rental data".'
+            }
+          >
+            {(p) => (
+              <Input
+                {...p}
+                key={plan}
+                type="number"
+                step="0.01"
+                min="0"
+                defaultValue={INSURANCE_SUGGESTED_OFFER[plan]}
+                className="h-9"
+              />
+            )}
+          </Field>
+
           <Field label="Notes" name="notes" error={errors.notes}>
             {(p) => <Textarea {...p} rows={2} defaultValue={values.notes} />}
           </Field>
@@ -200,11 +249,14 @@ function ActiveRental({
 }) {
   const { formAction, onSubmit, values, errors } = useFormAction(updateRentalAction, {
     rate_amount: String(rental.rate_amount),
+    insurance_offer_amount: rental.insurance_offer_amount !== null ? String(rental.insurance_offer_amount) : '',
+    insurance_amount: String(rental.insurance_amount),
     next_due_on: rental.next_due_on,
     notes: rental.notes ?? '',
   })
   const days = daysUntil(rental.next_due_on)
   const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+  const hasInsurance = Number(rental.insurance_amount) > 0
 
   return (
     <Card>
@@ -217,8 +269,14 @@ function ActiveRental({
           />
         </CardTitle>
         <CardDescription>
-          {RENTAL_PLAN_META[rental.plan].label} · {formatCurrency(rental.rate_amount)}{' '}
+          {RENTAL_PLAN_META[rental.plan].label} · {formatCurrency(rental.total_amount)}{' '}
           {RENTAL_PLAN_META[rental.plan].everyDaysLabel}
+          {hasInsurance && (
+            <>
+              {' '}
+              (rent {formatCurrency(rental.rate_amount)} + insurance {formatCurrency(rental.insurance_amount)})
+            </>
+          )}
         </CardDescription>
       </CardHeader>
 
@@ -232,6 +290,11 @@ function ActiveRental({
             label="Deposit held"
             value={rental.deposit_amount !== null ? formatCurrency(rental.deposit_amount) : '—'}
           />
+          <Detail
+            icon={ShieldCheckIcon}
+            label="Insurance"
+            value={insuranceLabel(rental, agreement)}
+          />
         </dl>
 
         <AgreementStatus hasCustomer={Boolean(rental.customer_id)} agreement={agreement} />
@@ -239,7 +302,8 @@ function ActiveRental({
         <div className="flex flex-wrap gap-2">
           <RecordPaymentButton
             rentalId={rental.id}
-            amount={rental.rate_amount}
+            amount={rental.total_amount}
+            insuranceAmount={rental.insurance_amount}
             plan={rental.plan}
             dueOn={rental.next_due_on}
             size="default"
@@ -279,13 +343,33 @@ function ActiveRental({
           <form action={formAction} onSubmit={onSubmit} className="mt-3 space-y-3" noValidate>
             <input type="hidden" name="rental_id" value={rental.id} />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Amount per cycle" name="rate_amount" error={errors.rate_amount}>
+              <Field label="Rent per cycle" name="rate_amount" error={errors.rate_amount}>
                 {(p) => (
                   <Input {...p} type="number" step="0.01" min="0" defaultValue={values.rate_amount} className="h-9" />
                 )}
               </Field>
               <Field label="Next payment due" name="next_due_on" error={errors.next_due_on}>
                 {(p) => <Input {...p} type="date" defaultValue={values.next_due_on} className="h-9" />}
+              </Field>
+              <Field
+                label="Insurance offer"
+                name="insurance_offer_amount"
+                error={errors.insurance_offer_amount}
+                hint="Shown to the renter before signing."
+              >
+                {(p) => (
+                  <Input {...p} type="number" step="0.01" min="0" defaultValue={values.insurance_offer_amount} className="h-9" />
+                )}
+              </Field>
+              <Field
+                label="Insurance charged"
+                name="insurance_amount"
+                error={errors.insurance_amount}
+                hint="Added to every payment. 0 = own insurance."
+              >
+                {(p) => (
+                  <Input {...p} type="number" step="0.01" min="0" defaultValue={values.insurance_amount} className="h-9" />
+                )}
               </Field>
             </div>
             <Field label="Notes" name="notes" error={errors.notes}>
