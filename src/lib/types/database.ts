@@ -9,7 +9,8 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type UserRole = 'admin' | 'customer'
-export type VehicleStatus = 'available' | 'rented' | 'maintenance' | 'archived'
+/** 'reserve': carro da frota fora da vitrine publica; no painel e igual aos demais. */
+export type VehicleStatus = 'available' | 'rented' | 'maintenance' | 'reserve'
 export type DocumentStatus = 'pending' | 'approved' | 'rejected'
 export type Transmission = 'automatic' | 'manual'
 export type Fuel = 'gasoline' | 'diesel' | 'hybrid' | 'electric'
@@ -388,6 +389,7 @@ export interface Database {
           payments_overdue: number
           payments_due_soon: number
           agreements_pending: number
+          vehicles_reserve: number
         }
         Relationships: []
       }

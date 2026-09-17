@@ -300,7 +300,7 @@ export function fixtureDashboardStats(): AdminDashboardStats {
   const expiring = fixtureExpiringDocuments()
   const due = fixtureRentalDue()
   return {
-    vehicles_total: fixtureVehicles.filter((v) => v.status !== 'archived').length,
+    vehicles_total: fixtureVehicles.length,
     vehicles_available: fixtureVehicles.filter((v) => v.status === 'available').length,
     vehicles_rented: fixtureVehicles.filter((v) => v.status === 'rented').length,
     vehicles_maintenance: fixtureVehicles.filter((v) => v.status === 'maintenance').length,
@@ -314,6 +314,7 @@ export function fixtureDashboardStats(): AdminDashboardStats {
     payments_overdue: due.filter((d) => d.urgency === 'overdue').length,
     payments_due_soon: due.filter((d) => ['due_today', 'soon', 'upcoming'].includes(d.urgency)).length,
     agreements_pending: fixtureAgreements().filter((a) => a.status === 'pending').length,
+    vehicles_reserve: fixtureVehicles.filter((v) => v.status === 'reserve').length,
   }
 }
 

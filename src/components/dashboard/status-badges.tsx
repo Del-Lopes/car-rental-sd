@@ -47,7 +47,7 @@ const VEHICLE_TONE: Record<VehicleStatus, Tone> = {
   available: 'success',
   rented: 'brand',
   maintenance: 'caution',
-  archived: 'neutral',
+  reserve: 'info',
 }
 
 export function VehicleStatusBadge({ status }: { status: VehicleStatus }) {

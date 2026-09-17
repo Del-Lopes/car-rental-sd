@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArchiveIcon, ExternalLinkIcon, Trash2Icon } from 'lucide-react'
+import { ArchiveRestoreIcon, ExternalLinkIcon, ParkingSquareIcon, Trash2Icon } from 'lucide-react'
 
 import { ConfirmActionButton } from '@/components/dashboard/confirm-action-button'
 import { PageHeader } from '@/components/dashboard/page-header'
@@ -12,7 +12,7 @@ import { VehicleForm } from '@/components/dashboard/vehicle-form'
 import { VehiclePhotos } from '@/components/dashboard/vehicle-photos'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { buttonVariants } from '@/components/ui/button'
-import { archiveVehicleAction, deleteVehicleAction, updateVehicleAction } from '@/lib/actions/vehicles'
+import { deleteVehicleAction, setVehicleReserveAction, updateVehicleAction } from '@/lib/actions/vehicles'
 import { requireAdmin } from '@/lib/auth'
 import { getAgreementForRental } from '@/lib/data/agreements'
 import { listCustomers } from '@/lib/data/customers'
@@ -82,23 +82,39 @@ export default async function EditVehiclePage({
                 View on site
               </Link>
             )}
-            {vehicle.status !== 'archived' && (
+            {vehicle.status === 'reserve' ? (
               <ConfirmActionButton
-                action={archiveVehicleAction.bind(null, vehicle.id)}
-                title="Archive this vehicle?"
-                description="It will be removed from the public fleet and hidden from the overview. Its history is kept."
-                confirmLabel="Archive"
+                action={setVehicleReserveAction.bind(null, vehicle.id, false)}
+                title="Return this vehicle to the fleet?"
+                description="It becomes available again and shows up on the public site."
+                confirmLabel="Return to fleet"
                 variant="outline"
+                confirmVariant="default"
                 className="h-9 px-3"
               >
-                <ArchiveIcon />
-                Archive
+                <ArchiveRestoreIcon />
+                Return to fleet
               </ConfirmActionButton>
+            ) : (
+              vehicle.status === 'available' && (
+                <ConfirmActionButton
+                  action={setVehicleReserveAction.bind(null, vehicle.id, true)}
+                  title="Move this vehicle to reserve?"
+                  description="It leaves the public site but stays exactly the same in the dashboard: registration alerts, counts and rentals keep working."
+                  confirmLabel="Move to reserve"
+                  variant="outline"
+                  confirmVariant="default"
+                  className="h-9 px-3"
+                >
+                  <ParkingSquareIcon />
+                  Move to reserve
+                </ConfirmActionButton>
+              )
             )}
             <ConfirmActionButton
               action={deleteVehicleAction.bind(null, vehicle.id)}
               title="Delete this vehicle permanently?"
-              description={`${vehicleTitle(vehicle)} will be removed along with ${photos.length} ${photos.length === 1 ? 'photo' : 'photos'} and its registration files. This cannot be undone. Vehicles with rental history can only be archived.`}
+              description={`${vehicleTitle(vehicle)} will be removed along with ${photos.length} ${photos.length === 1 ? 'photo' : 'photos'} and its registration files. This cannot be undone. Vehicles with rental history can only be moved to reserve.`}
               confirmLabel="Delete permanently"
               variant="destructive"
               className="h-9 px-3"

@@ -28,6 +28,7 @@ export function ConfirmActionButton({
   confirmLabel,
   children,
   variant = 'destructive',
+  confirmVariant = 'destructive',
   size = 'default',
   className,
 }: {
@@ -37,6 +38,8 @@ export function ConfirmActionButton({
   confirmLabel: string
   children: React.ReactNode
   variant?: 'destructive' | 'outline' | 'ghost'
+  /** Estilo do botao de confirmar: vermelho so para o que realmente apaga ou desfaz. */
+  confirmVariant?: 'destructive' | 'default'
   size?: 'default' | 'sm' | 'icon-sm'
   className?: string
 }) {
@@ -69,7 +72,7 @@ export function ConfirmActionButton({
         </DialogHeader>
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
-          <Button variant="destructive" onClick={confirm} disabled={pending}>
+          <Button variant={confirmVariant} onClick={confirm} disabled={pending}>
             {pending && <Loader2Icon className="animate-spin" />}
             {confirmLabel}
           </Button>

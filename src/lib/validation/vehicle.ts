@@ -43,7 +43,7 @@ export const vehicleFormSchema = z.object({
     .min(0, 'Monthly rate cannot be negative')
     .max(500_000, 'Monthly rate looks too high'),
   security_deposit: optionalDecimal(0, 100_000),
-  status: z.enum(['available', 'rented', 'maintenance', 'archived']).default('available'),
+  status: z.enum(['available', 'rented', 'maintenance', 'reserve']).default('available'),
   description: optionalText(2000),
   featured: checkbox,
 })

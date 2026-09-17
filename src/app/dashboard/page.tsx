@@ -52,7 +52,7 @@ export default async function DashboardHomePage() {
   // Carro na frota sem registration nao tem data para vencer, entao nunca
   // apareceria na lista de vencimentos -- e e justamente o caso mais arriscado.
   const missingRegistration = fleet.filter(
-    (vehicle) => vehicle.status !== 'archived' && !currentDocument(vehicle.vehicle_documents, 'registration'),
+    (vehicle) => !currentDocument(vehicle.vehicle_documents, 'registration'),
   )
   const firstName = profile.full_name?.split(' ')[0]
   const overduePayments = dueRentals.filter((rental) => rental.urgency === 'overdue')
@@ -135,7 +135,7 @@ export default async function DashboardHomePage() {
           href="#rentals"
           highlight={stats.payments_overdue > 0}
         />
-        <StatCard icon={CarFrontIcon} label="Vehicles" value={stats.vehicles_total} detail={`${stats.vehicles_available} available`} href="/dashboard/vehicles" />
+        <StatCard icon={CarFrontIcon} label="Vehicles" value={stats.vehicles_total} detail={`${stats.vehicles_available} available${stats.vehicles_reserve ? ` · ${stats.vehicles_reserve} in reserve` : ''}`} href="/dashboard/vehicles" />
         <StatCard icon={WrenchIcon} label="Rented · Maintenance" value={`${stats.vehicles_rented} · ${stats.vehicles_maintenance}`} detail="out of the fleet" href="/dashboard/vehicles" />
         <StatCard icon={UsersRoundIcon} label="Customers" value={stats.customers_total} detail="registered" href="/dashboard/customers" />
         <StatCard
@@ -237,7 +237,6 @@ export default async function DashboardHomePage() {
           <CardTitle>Upcoming registration expirations</CardTitle>
           <CardDescription>
             Missing, expired and expiring in the next {EXPIRY_HORIZON_DAYS} days, most urgent first.
-            Archived vehicles are not listed.
           </CardDescription>
         </CardHeader>
         <CardContent className="px-0">

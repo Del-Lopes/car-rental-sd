@@ -80,7 +80,8 @@ export const VEHICLE_STATUS_META: Record<VehicleStatus, { label: string; publicV
     available: { label: 'Available', publicVisible: true },
     rented: { label: 'Rented', publicVisible: true },
     maintenance: { label: 'Maintenance', publicVisible: true },
-    archived: { label: 'Archived', publicVisible: false },
+    // Reserva: igual aos demais no painel; so nao aparece na vitrine.
+    reserve: { label: 'Reserve', publicVisible: false },
   }
 
 export const DOCUMENT_STATUS_META: Record<DocumentStatus, { label: string }> = {

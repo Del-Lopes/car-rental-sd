@@ -72,23 +72,25 @@ export async function updateVehicleAction(
 }
 
 /**
- * Arquivar em vez de apagar: o veiculo some da vitrine e da lista, mas o
- * historico de documentos continua disponivel para consulta.
+ * Coloca o veiculo na reserva ou devolve para a frota disponivel.
+ * Na reserva o carro continua igual aos demais no painel (vencimentos,
+ * contadores, pode ser alugado); a unica diferenca e sair da vitrine publica.
  */
-export async function archiveVehicleAction(vehicleId: string): Promise<ActionResult> {
+export async function setVehicleReserveAction(vehicleId: string, inReserve: boolean): Promise<ActionResult> {
   await requireAdmin()
   if (isPreviewMode()) return failure(PREVIEW_WRITE_MESSAGE)
 
   const supabase = await createClient()
   const { error } = await supabase
     .from('vehicles')
-    .update({ status: 'archived' })
+    .update({ status: inReserve ? 'reserve' : 'available' })
     .eq('id', vehicleId)
 
   if (error) return failure(translateDbError(error.message))
 
   revalidateVehicle(vehicleId)
-  return success('Vehicle archived')
+  revalidatePath('/dashboard')
+  return success(inReserve ? 'Vehicle moved to reserve' : 'Vehicle is available on the site again')
 }
 
 /**
@@ -101,7 +103,7 @@ export async function archiveVehicleAction(vehicleId: string): Promise<ActionRes
  *
  * Carro com historico de locacao nao pode ser apagado: o banco bloqueia
  * (on delete restrict) para nao perder o registro de recebimentos. Nesse caso a
- * saida e arquivar.
+ * saida e mover para a reserva.
  */
 export async function deleteVehicleAction(vehicleId: string): Promise<ActionResult> {
   await requireAdmin()
@@ -117,7 +119,7 @@ export async function deleteVehicleAction(vehicleId: string): Promise<ActionResu
   if (rentalError) return failure(rentalError.message)
   if ((rentalCount ?? 0) > 0) {
     return failure(
-      'This vehicle has rental history and cannot be deleted, so the payment records are kept. Archive it instead.',
+      'This vehicle has rental history and cannot be deleted, so the payment records are kept. Move it to reserve instead.',
     )
   }
 
@@ -364,7 +366,7 @@ function translateDbError(message: string): string {
   if (message.includes('vehicles_vin_key')) return 'Another vehicle already uses this VIN'
   // Locacao criada entre a checagem e a exclusao: o banco barra pela chave estrangeira.
   if (message.includes('rentals_vehicle_id_fkey')) {
-    return 'This vehicle has rental history and cannot be deleted. Archive it instead.'
+    return 'This vehicle has rental history and cannot be deleted. Move it to reserve instead.'
   }
   if (message.includes('violates row-level security')) {
     return 'You do not have permission to perform this action'
