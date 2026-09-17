@@ -29,6 +29,7 @@ import {
 import { getCurrentTerms } from '@/lib/data/agreements'
 import { getDashboardStats, getExpiringVehicleDocuments, groupByUrgency } from '@/lib/data/dashboard'
 import { listDueRentals } from '@/lib/data/rentals'
+import { currentDocument, listVehiclesForAdmin } from '@/lib/data/vehicles'
 import { formatCurrency, formatDate, formatDaysToExpire, formatMonthYear } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -40,13 +41,19 @@ export default async function DashboardHomePage() {
   // A area do cliente comeca pelos documentos; o overview e so do admin.
   if (profile.role !== 'admin') redirect('/dashboard/documents')
 
-  const [stats, expiring, dueRentals, currentTerms] = await Promise.all([
+  const [stats, expiring, dueRentals, currentTerms, fleet] = await Promise.all([
     getDashboardStats(),
     getExpiringVehicleDocuments(),
     listDueRentals(),
     getCurrentTerms(),
+    listVehiclesForAdmin(),
   ])
   const groups = groupByUrgency(expiring)
+  // Carro na frota sem registration nao tem data para vencer, entao nunca
+  // apareceria na lista de vencimentos -- e e justamente o caso mais arriscado.
+  const missingRegistration = fleet.filter(
+    (vehicle) => vehicle.status !== 'archived' && !currentDocument(vehicle.vehicle_documents, 'registration'),
+  )
   const firstName = profile.full_name?.split(' ')[0]
   const overduePayments = dueRentals.filter((rental) => rental.urgency === 'overdue')
 
@@ -220,16 +227,47 @@ export default async function DashboardHomePage() {
       <Card>
         <CardHeader>
           <CardTitle>Upcoming registration expirations</CardTitle>
-          <CardDescription>Expired and expiring in the next {EXPIRY_HORIZON_DAYS} days, most urgent first.</CardDescription>
+          <CardDescription>
+            Missing, expired and expiring in the next {EXPIRY_HORIZON_DAYS} days, most urgent first.
+            Archived vehicles are not listed.
+          </CardDescription>
         </CardHeader>
         <CardContent className="px-0">
-          {groups.length === 0 ? (
+          {missingRegistration.length > 0 && (
+            <div className="border-y border-border">
+              <div className="flex items-center gap-2 bg-muted/40 px-6 py-2.5">
+                <ToneBadge tone="danger">No registration on file</ToneBadge>
+                <span className="text-xs text-muted-foreground">
+                  {missingRegistration.length} {missingRegistration.length === 1 ? 'vehicle' : 'vehicles'}
+                </span>
+              </div>
+              <ul className="divide-y divide-border">
+                {missingRegistration.map((vehicle) => (
+                  <li key={vehicle.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 text-sm">
+                    <span>
+                      <span className="font-medium">
+                        {vehicle.year} {vehicle.make} {vehicle.model}
+                      </span>
+                      {vehicle.plate && (
+                        <span className="ml-2 font-mono text-xs text-muted-foreground">{vehicle.plate}</span>
+                      )}
+                    </span>
+                    <Link href={`/dashboard/vehicles/${vehicle.id}`} className="text-xs font-medium text-brand hover:underline">
+                      Add registration →
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {groups.length === 0 && missingRegistration.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
               <CheckCircle2Icon className="size-8 text-emerald-500" strokeWidth={1.5} />
               <p className="font-medium">All registrations are up to date</p>
               <p className="text-sm text-muted-foreground">Nothing expires in the next {EXPIRY_HORIZON_DAYS} days.</p>
             </div>
-          ) : (
+          ) : groups.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -273,7 +311,7 @@ export default async function DashboardHomePage() {
                 </TableBody>
               ))}
             </Table>
-          )}
+          ) : null}
         </CardContent>
       </Card>
     </>
