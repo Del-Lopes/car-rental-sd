@@ -1,4 +1,4 @@
-import { parseDateOnly } from '@/lib/format'
+import { parseDateOnly, todayIso } from '@/lib/format'
 import type { DocumentUrgency, PaymentUrgency } from '@/lib/types/database'
 
 /**
@@ -9,7 +9,7 @@ import type { DocumentUrgency, PaymentUrgency } from '@/lib/types/database'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-export function daysUntil(dateOnly: string, today: Date = new Date()): number {
+export function daysUntil(dateOnly: string, today: Date = parseDateOnly(todayIso())): number {
   const start = new Date(today.getFullYear(), today.getMonth(), today.getDate())
   return Math.round((parseDateOnly(dateOnly).getTime() - start.getTime()) / DAY_MS)
 }

@@ -23,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { closeRentalAction, startRentalAction, updateRentalAction } from '@/lib/actions/rentals'
 import { INSURANCE_SUGGESTED_OFFER, RENTAL_PLAN_META } from '@/lib/constants'
 import { paymentUrgencyFor } from '@/lib/expiry'
-import { formatCurrency, formatDate, formatDaysToExpire } from '@/lib/format'
+import { formatCurrency, formatDate, formatDaysToExpire, shiftDateIso, todayIso } from '@/lib/format'
 import { daysUntil } from '@/lib/expiry'
 import type { InsuranceChoice, RentalDue, RentalPayment, RentalPlan } from '@/lib/types/database'
 
@@ -51,14 +51,11 @@ function insuranceLabel(rental: RentalDue, agreement: RentalAgreementInfo): stri
 
 /** Data de hoje e a data do proximo vencimento sugerida para cada plano. */
 function today(): string {
-  return new Date().toISOString().slice(0, 10)
+  return todayIso()
 }
 
 function suggestedDue(plan: RentalPlan): string {
-  const date = new Date()
-  if (plan === 'weekly') date.setDate(date.getDate() + 7)
-  else date.setMonth(date.getMonth() + 1)
-  return date.toISOString().slice(0, 10)
+  return shiftDateIso(todayIso(), plan === 'weekly' ? { days: 7 } : { months: 1 })
 }
 
 export function RentalPanel({
@@ -411,7 +408,7 @@ function AgreementStatus({ hasCustomer, agreement }: { hasCustomer: boolean; agr
       <FileSignatureIcon className={signed ? 'size-4 shrink-0 text-emerald-500' : 'size-4 shrink-0 text-amber-500'} />
       <span className="flex-1">
         {signed && agreement.signedAt
-          ? `Agreement signed on ${formatDate(agreement.signedAt.slice(0, 10))}`
+          ? `Agreement signed on ${formatDate(agreement.signedAt)}`
           : 'Agreement awaiting customer signature'}
       </span>
       <span className="font-medium">View →</span>

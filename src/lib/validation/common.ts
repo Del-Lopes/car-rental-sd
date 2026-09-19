@@ -33,6 +33,19 @@ export const optionalDecimal = (min: number, max: number) =>
     z.number().min(min).max(max).nullable().optional(),
   )
 
+/**
+ * Valor obrigatorio. `z.coerce.number()` transformaria o campo vazio em 0 -- um
+ * carro sem preco digitado sairia na vitrine por $0.
+ */
+export const requiredDecimal = (label: string, min: number, max: number) =>
+  z.preprocess(
+    (value) => (blankToNull(value) === null ? undefined : Number(value)),
+    z
+      .number({ error: `${label} is required` })
+      .min(min, `${label} cannot be negative`)
+      .max(max, `${label} looks too high`),
+  )
+
 /** Colunas `date` do Postgres: sempre YYYY-MM-DD. */
 export const dateString = z
   .string()

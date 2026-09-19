@@ -6,6 +6,33 @@
 
 const LOCALE = 'en-US'
 
+/**
+ * A operacao e em San Diego. "Hoje" e os horarios exibidos seguem Los Angeles,
+ * onde quer que rode o servidor (a Vercel roda em UTC) ou esteja o admin.
+ */
+export const APP_TIME_ZONE = 'America/Los_Angeles'
+
+const isoDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: APP_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+/** Data de hoje em San Diego, como "YYYY-MM-DD". */
+export function todayIso(): string {
+  return isoDateFormatter.format(new Date())
+}
+
+/** Soma dias ou meses a uma data "YYYY-MM-DD" sem passar por UTC. */
+export function shiftDateIso(value: string, { days = 0, months = 0 }: { days?: number; months?: number }): string {
+  const date = parseDateOnly(value)
+  date.setMonth(date.getMonth() + months)
+  date.setDate(date.getDate() + days)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
 const currencyFormatter = new Intl.NumberFormat(LOCALE, {
   style: 'currency',
   currency: 'USD',
@@ -57,12 +84,14 @@ export function parseDateOnly(value: string): Date {
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) return '--'
-  const date = value.length === 10 ? parseDateOnly(value) : new Date(value)
+  // Data pura nao tem fuso; timestamp e convertido para o horario de San Diego.
+  const dateOnly = value.length === 10
   return new Intl.DateTimeFormat(LOCALE, {
     month: '2-digit',
     day: '2-digit',
     year: 'numeric',
-  }).format(date)
+    timeZone: dateOnly ? undefined : APP_TIME_ZONE,
+  }).format(dateOnly ? parseDateOnly(value) : new Date(value))
 }
 
 export function formatDateTime(value: string | null | undefined): string {
@@ -73,6 +102,8 @@ export function formatDateTime(value: string | null | undefined): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: APP_TIME_ZONE,
+    timeZoneName: 'short',
   }).format(new Date(value))
 }
 

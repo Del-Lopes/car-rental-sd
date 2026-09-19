@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { requireAdmin, requireProfile } from '@/lib/auth'
 import { STORAGE_BUCKETS } from '@/lib/constants'
 import { PREVIEW_WRITE_MESSAGE, isPreviewMode } from '@/lib/preview'
+import { getCustomerDocumentTypes } from '@/lib/data/lookups'
 import { createClient } from '@/lib/supabase/server'
 import { buildCustomerDocumentPath } from '@/lib/storage'
 import {
@@ -34,6 +35,14 @@ export async function uploadCustomerDocumentAction(
     expires_at: formData.get('expires_at'),
   })
   if (!parsed.success) return validationFailure(parsed.error)
+
+  // A validade da CNH alimenta o controle de vencimentos: sem ela o documento
+  // seria aprovado sem data para vigiar.
+  const type = (await getCustomerDocumentTypes()).find((item) => item.slug === parsed.data.type_slug)
+  if (!type) return failure('Unknown document type')
+  if (type.requires_expiry && !parsed.data.expires_at) {
+    return failure('Check the highlighted fields', { expires_at: ['Enter the expiration date'] })
+  }
 
   const file = formData.get('file') as File | null
   const fileError = validateUploadedFile(file)
@@ -111,8 +120,16 @@ export async function deleteCustomerDocumentAction(documentId: string): Promise<
 
   if (!document) return failure('Document not found')
 
-  const { error } = await supabase.from('customer_documents').delete().eq('id', documentId)
+  // A RLS so deixa o dono apagar enquanto esta pendente, e nesse caso recusa em
+  // silencio (0 linhas). Sem conferir, o arquivo de um documento recem-aprovado
+  // seria removido do Storage e o registro ficaria apontando para o nada.
+  const { data: deleted, error } = await supabase
+    .from('customer_documents')
+    .delete()
+    .eq('id', documentId)
+    .select('id')
   if (error) return failure(error.message)
+  if (!deleted?.length) return failure('This document was already reviewed and can no longer be removed')
 
   await supabase.storage.from(STORAGE_BUCKETS.customerDocs).remove([document.file_path])
 

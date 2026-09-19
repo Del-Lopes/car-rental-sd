@@ -6,6 +6,7 @@ import {
   optionalDecimal,
   optionalInt,
   optionalText,
+  requiredDecimal,
   requiredText,
   uuid,
 } from '@/lib/validation/common'
@@ -34,14 +35,8 @@ export const vehicleFormSchema = z.object({
   plate: optionalText(20),
   vin: optionalText(30),
   // Sem diaria: a locadora so aluga por semana ou por mes.
-  weekly_rate: z.coerce
-    .number()
-    .min(0, 'Weekly rate cannot be negative')
-    .max(100_000, 'Weekly rate looks too high'),
-  monthly_rate: z.coerce
-    .number()
-    .min(0, 'Monthly rate cannot be negative')
-    .max(500_000, 'Monthly rate looks too high'),
+  weekly_rate: requiredDecimal('Weekly rate', 0, 100_000),
+  monthly_rate: requiredDecimal('Monthly rate', 0, 500_000),
   security_deposit: optionalDecimal(0, 100_000),
   status: z.enum(['available', 'rented', 'maintenance', 'reserve']).default('available'),
   description: optionalText(2000),

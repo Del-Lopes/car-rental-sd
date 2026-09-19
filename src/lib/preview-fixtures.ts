@@ -246,6 +246,7 @@ export const fixtureRentals: Rental[] = rentalPlan.map(([vehicleIndex, dueOffset
   notes: null,
   insurance_offer_amount: index < 2 ? (plan === 'weekly' ? 20 : 87) : null,
   insurance_amount: index === 1 ? 87 : 0,
+  vehicle_status_before: 'available',
   created_at: daysAgo(30 + index * 10),
   updated_at: iso,
 }))

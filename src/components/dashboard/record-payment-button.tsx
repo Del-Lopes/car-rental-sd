@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input'
 import { idleResult } from '@/lib/actions/result'
 import { registerRentalPaymentAction } from '@/lib/actions/rentals'
 import { RENTAL_PLAN_META } from '@/lib/constants'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { formatCurrency, formatDate, todayIso } from '@/lib/format'
 import type { RentalPlan } from '@/lib/types/database'
 
 /**
@@ -46,7 +46,7 @@ export function RecordPaymentButton({
 }) {
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayIso()
 
   const submit = (formData: FormData) =>
     startTransition(async () => {

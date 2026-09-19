@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 
 import { requireAdmin } from '@/lib/auth'
+import { todayIso } from '@/lib/format'
 import { PREVIEW_WRITE_MESSAGE, isPreviewMode } from '@/lib/preview'
 import { createClient } from '@/lib/supabase/server'
 import { rentalFormSchema, rentalPaymentSchema, rentalUpdateSchema } from '@/lib/validation/rental'
@@ -114,7 +115,7 @@ export async function closeRentalAction(rentalId: string): Promise<ActionResult>
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('rentals')
-    .update({ status: 'closed', ended_on: new Date().toISOString().slice(0, 10) })
+    .update({ status: 'closed', ended_on: todayIso() })
     .eq('id', rentalId)
     .select('vehicle_id')
     .maybeSingle()

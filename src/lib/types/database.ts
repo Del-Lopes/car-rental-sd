@@ -282,6 +282,8 @@ export interface Database {
           notes: string | null
           insurance_offer_amount: number | null
           insurance_amount: number
+          /** Status do carro antes da locacao; ao encerrar, carro da reserva volta para la. */
+          vehicle_status_before: VehicleStatus | null
           created_at: string
           updated_at: string
         }

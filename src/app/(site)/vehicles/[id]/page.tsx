@@ -128,7 +128,11 @@ export default async function VehicleDetailPage({ params }: { params: Params }) 
               </li>
             </ul>
 
-            {profile ? (
+            {profile?.role === 'admin' ? (
+              <Link href={`/dashboard/vehicles/${vehicle.id}`} className={cn(buttonVariants(), 'h-11 w-full')}>
+                Manage this vehicle
+              </Link>
+            ) : profile ? (
               <Link href="/dashboard/documents" className={cn(buttonVariants(), 'h-11 w-full')}>
                 Check my documents
               </Link>

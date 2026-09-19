@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { dateString, optionalDecimal, optionalText, uuid } from '@/lib/validation/common'
+import { dateString, optionalDecimal, optionalText, requiredDecimal, uuid } from '@/lib/validation/common'
 
 /**
  * Locacao registrada manualmente pelo dono: quem alugou, qual plano, quanto
@@ -13,7 +13,7 @@ export const rentalFormSchema = z
     customer_id: z.preprocess((v) => (v === '' ? null : v), uuid.nullable().optional()),
     renter_name: optionalText(120),
     plan: z.enum(['weekly', 'monthly']),
-    rate_amount: z.coerce.number().min(0, 'Amount cannot be negative').max(500_000),
+    rate_amount: requiredDecimal('Rent amount', 0, 500_000),
     deposit_amount: optionalDecimal(0, 500_000),
     // Valor oferecido para incluir o locatario no seguro da Carental, por ciclo.
     // Vazio = nao oferecido; o locatario so pode usar o proprio seguro.
@@ -36,14 +36,14 @@ export type RentalFormValues = z.infer<typeof rentalFormSchema>
 /** Recebimento manual: valor e data podem ser ajustados pelo dono. */
 export const rentalPaymentSchema = z.object({
   rental_id: uuid,
-  amount: z.coerce.number().min(0, 'Amount cannot be negative').max(500_000),
+  amount: requiredDecimal('Amount', 0, 500_000),
   paid_on: dateString,
 })
 
 /** Correcao de dados de uma locacao em andamento. */
 export const rentalUpdateSchema = z.object({
   rental_id: uuid,
-  rate_amount: z.coerce.number().min(0).max(500_000),
+  rate_amount: requiredDecimal('Rent amount', 0, 500_000),
   insurance_offer_amount: optionalDecimal(0, 50_000),
   // Seguro efetivamente cobrado por ciclo (0 = locatario usa o proprio).
   insurance_amount: z.coerce.number().min(0).max(50_000),
