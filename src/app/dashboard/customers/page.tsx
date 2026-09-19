@@ -1,16 +1,18 @@
 import type { Metadata } from 'next'
 import Form from 'next/form'
 import Link from 'next/link'
-import { SearchIcon, UsersRoundIcon } from 'lucide-react'
+import { FileSearchIcon, SearchIcon, UsersRoundIcon } from 'lucide-react'
 
 import { PageHeader } from '@/components/dashboard/page-header'
 import { ToneBadge } from '@/components/dashboard/status-badges'
+import { buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { requireAdmin } from '@/lib/auth'
 import { listCustomers } from '@/lib/data/customers'
 import { formatDate } from '@/lib/format'
 import type { CustomerDocumentSummary } from '@/lib/types/database'
+import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Customers' }
 
@@ -52,22 +54,28 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
                 <TableHead className="pl-4">Customer</TableHead>
                 <TableHead className="hidden md:table-cell">Phone</TableHead>
                 <TableHead className="hidden sm:table-cell">Joined</TableHead>
-                <TableHead className="pr-4">Documents</TableHead>
+                <TableHead>Documents</TableHead>
+                <TableHead className="pr-4 text-right">
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {customers.map((customer) => (
                 <TableRow key={customer.profile_id}>
                   <TableCell className="pl-4">
-                    <Link href={`/dashboard/customers/${customer.profile_id}`} className="block font-medium hover:text-brand">
+                    <Link href={customerHref(customer)} className="block font-medium hover:text-brand">
                       {customer.full_name ?? 'Unnamed customer'}
                     </Link>
                     <span className="text-xs text-muted-foreground">{customer.email}</span>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{customer.phone ?? '—'}</TableCell>
                   <TableCell className="hidden tabular-nums sm:table-cell">{formatDate(customer.created_at)}</TableCell>
-                  <TableCell className="pr-4">
+                  <TableCell>
                     <DocumentsSummary customer={customer} />
+                  </TableCell>
+                  <TableCell className="pr-4 text-right">
+                    <ReviewButton customer={customer} />
                   </TableCell>
                 </TableRow>
               ))}
@@ -84,7 +92,15 @@ function DocumentsSummary({ customer }: { customer: CustomerDocumentSummary }) {
 
   return (
     <span className="flex flex-wrap gap-1.5">
-      {customer.documents_pending > 0 && <ToneBadge tone="caution">{customer.documents_pending} to review</ToneBadge>}
+      {customer.documents_pending > 0 && (
+        <Link
+          href={customerHref(customer)}
+          className="rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          aria-label={`Review ${customer.documents_pending} documents from ${customer.full_name ?? 'this customer'}`}
+        >
+          <ToneBadge tone="caution">{customer.documents_pending} to review</ToneBadge>
+        </Link>
+      )}
       {customer.documents_rejected > 0 && <ToneBadge tone="danger">{customer.documents_rejected} rejected</ToneBadge>}
       {customer.required_missing === 0 ? (
         <ToneBadge tone="success">Approved</ToneBadge>
@@ -92,5 +108,24 @@ function DocumentsSummary({ customer }: { customer: CustomerDocumentSummary }) {
         customer.documents_pending === 0 && <ToneBadge tone="neutral">{customer.required_missing} missing</ToneBadge>
       )}
     </span>
+  )
+}
+
+const customerHref = (customer: CustomerDocumentSummary) => `/dashboard/customers/${customer.profile_id}`
+
+/**
+ * Atalho explicito para a revisao: em destaque quando ha documento esperando,
+ * discreto quando e so para consultar.
+ */
+function ReviewButton({ customer }: { customer: CustomerDocumentSummary }) {
+  const pending = customer.documents_pending > 0
+  return (
+    <Link
+      href={customerHref(customer)}
+      className={cn(buttonVariants({ variant: pending ? 'default' : 'outline', size: 'sm' }), 'whitespace-nowrap')}
+    >
+      <FileSearchIcon />
+      {pending ? 'Review documents' : 'View documents'}
+    </Link>
   )
 }
