@@ -61,9 +61,11 @@ export async function getCustomer(profileId: string): Promise<CustomerDetail | n
 
   const supabase = await createClient()
 
+  // customer_documents aponta para profiles duas vezes (dono e revisor): sem
+  // nomear a FK, o PostgREST recusa o embed como ambiguo.
   const { data, error } = await supabase
     .from('profiles')
-    .select('*, customer_documents(*)')
+    .select('*, customer_documents!customer_documents_profile_id_fkey(*)')
     .eq('id', profileId)
     .maybeSingle()
 

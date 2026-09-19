@@ -37,7 +37,7 @@ const STEPS = [
   {
     icon: FileCheck2Icon,
     title: 'Create your account',
-    body: "Sign up and upload your driver's license and proof of address. It only takes a few minutes.",
+    body: "Sign up and upload your driver's license. It only takes a few minutes.",
   },
   {
     icon: KeyRoundIcon,

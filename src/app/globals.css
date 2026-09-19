@@ -147,6 +147,11 @@
   html {
     @apply font-sans;
   }
+  /* O PasswordInput tem botao proprio; o olho nativo do Edge duplicaria. */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
 }
 
 @layer components {

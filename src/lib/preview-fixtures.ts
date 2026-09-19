@@ -57,7 +57,7 @@ export const fixtureVehicleDocumentTypes: VehicleDocumentType[] = [
 export const fixtureCustomerDocumentTypes: CustomerDocumentType[] = [
   { slug: 'dl_front', label: "Driver's license (front)", is_required: true, requires_expiry: true, sort_order: 1, is_active: true },
   { slug: 'dl_back', label: "Driver's license (back)", is_required: true, requires_expiry: false, sort_order: 2, is_active: true },
-  { slug: 'proof_of_address', label: 'Proof of address', is_required: true, requires_expiry: false, sort_order: 3, is_active: true },
+  { slug: 'proof_of_address', label: 'Proof of address', is_required: false, requires_expiry: false, sort_order: 3, is_active: true },
 ]
 
 type VehicleSeed = Omit<Vehicle, 'created_at' | 'updated_at' | 'doors' | 'vin'> & {

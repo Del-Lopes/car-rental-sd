@@ -3,6 +3,7 @@
 import { FileTextIcon } from 'lucide-react'
 
 import { Field, nativeSelectClass } from '@/components/forms/field'
+import { FileInput } from '@/components/forms/file-input'
 import { SubmitButton } from '@/components/forms/submit-button'
 import { useFormAction } from '@/components/forms/use-form-action'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -84,9 +85,9 @@ export function RegistrationCard({
             label={registration?.file_path ? 'Replace file' : 'File'}
             name="file"
             error={errors.file}
-            hint="Optional. PDF or image up to 10 MB."
+            hint="Optional. PDF up to 4 MB, or a photo (resized automatically)."
           >
-            {(p) => <Input {...p} type="file" accept={ACCEPTED_DOCUMENT_TYPES.join(',')} className="h-9 py-1" />}
+            {(p) => <FileInput {...p} accept={ACCEPTED_DOCUMENT_TYPES.join(',')} className="h-9 py-1" />}
           </Field>
 
           <div className="flex flex-wrap items-center justify-between gap-3">

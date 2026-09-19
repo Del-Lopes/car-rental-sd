@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Field } from '@/components/forms/field'
 import { SubmitButton } from '@/components/forms/submit-button'
 import { useFormAction } from '@/components/forms/use-form-action'
+import { PasswordInput } from '@/components/forms/password-input'
 import { Input } from '@/components/ui/input'
 import { signInAction } from '@/lib/actions/auth'
 
@@ -23,7 +24,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
 
       <Field label="Password" name="password" error={errors.password}>
         {(props) => (
-          <Input {...props} type="password" autoComplete="current-password" className="h-10" required />
+          <PasswordInput {...props} autoComplete="current-password" className="h-10" required />
         )}
       </Field>
 

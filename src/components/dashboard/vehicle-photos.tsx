@@ -13,6 +13,7 @@ import {
   setCoverPhotoAction,
   uploadVehiclePhotoAction,
 } from '@/lib/actions/vehicles'
+import { oversizeMessage, shrinkImage } from '@/lib/client-image'
 import { ACCEPTED_IMAGE_TYPES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
@@ -32,7 +33,13 @@ export function VehiclePhotos({ vehicleId, photos }: { vehicleId: string; photos
 
     startTransition(async () => {
       let uploaded = 0
-      for (const file of Array.from(files)) {
+      for (const original of Array.from(files)) {
+        const file = await shrinkImage(original)
+        const tooLarge = oversizeMessage(file)
+        if (tooLarge) {
+          toast.error(tooLarge)
+          continue
+        }
         const formData = new FormData()
         formData.set('vehicle_id', vehicleId)
         formData.set('file', file)
@@ -57,7 +64,7 @@ export function VehiclePhotos({ vehicleId, photos }: { vehicleId: string; photos
       <CardHeader>
         <CardTitle>Photos</CardTitle>
         <CardDescription>
-          The cover photo is used in the fleet grid. JPG, PNG, WebP or AVIF up to 10 MB.
+          The cover photo is used in the fleet grid. JPG, PNG, WebP or AVIF — large photos are resized automatically.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

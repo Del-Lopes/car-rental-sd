@@ -5,6 +5,7 @@ import { MailCheckIcon } from 'lucide-react'
 import { Field } from '@/components/forms/field'
 import { SubmitButton } from '@/components/forms/submit-button'
 import { useFormAction } from '@/components/forms/use-form-action'
+import { PasswordInput } from '@/components/forms/password-input'
 import { Input } from '@/components/ui/input'
 import { signUpAction } from '@/lib/actions/auth'
 
@@ -44,10 +45,10 @@ export function RegisterForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Password" name="password" error={errors.password}>
-          {(props) => <Input {...props} type="password" autoComplete="new-password" className="h-10" required />}
+          {(props) => <PasswordInput {...props} autoComplete="new-password" className="h-10" required />}
         </Field>
         <Field label="Confirm" name="confirm_password" error={errors.confirm_password}>
-          {(props) => <Input {...props} type="password" autoComplete="new-password" className="h-10" required />}
+          {(props) => <PasswordInput {...props} autoComplete="new-password" className="h-10" required />}
         </Field>
       </div>
 

@@ -137,6 +137,12 @@ export default async function MyDocumentsPage({ searchParams }: { searchParams: 
                 </div>
               )}
 
+              {!document && !type.is_required && (
+                <p className="text-sm text-muted-foreground">
+                  Optional. Traveling or don&apos;t have one? You can skip it and show it at pick-up.
+                </p>
+              )}
+
               {(!document || document.status === 'rejected') && (
                 <DocumentUploadForm type={type} isReplacement={document?.status === 'rejected'} />
               )}

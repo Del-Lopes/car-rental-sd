@@ -147,7 +147,7 @@ export default async function VehicleDetailPage({ params }: { params: Params }) 
             )}
 
             <p className="text-xs leading-relaxed text-muted-foreground">
-              To rent, create an account and upload your driver&apos;s license and proof of address.
+              To rent, create an account and upload your driver&apos;s license.
               Our team reviews them and gets in touch to arrange the rental.
             </p>
           </div>

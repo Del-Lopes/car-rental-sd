@@ -102,8 +102,12 @@ export const FUEL_LABELS: Record<Fuel, string> = {
   electric: 'Electric',
 }
 
-/** Limites de upload -- espelham o que foi configurado nos buckets do Storage. */
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+/**
+ * Limite de upload. Os buckets aceitam 10 MB, mas a Vercel recusa corpos acima
+ * de 4,5 MB antes de a action rodar; fotos maiores sao reduzidas no navegador
+ * (src/lib/client-image.ts) antes de chegar aqui.
+ */
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 export const ACCEPTED_DOCUMENT_TYPES = [
   'image/jpeg',

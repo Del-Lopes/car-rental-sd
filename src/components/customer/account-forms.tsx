@@ -4,6 +4,7 @@ import { Field } from '@/components/forms/field'
 import { SubmitButton } from '@/components/forms/submit-button'
 import { useFormAction } from '@/components/forms/use-form-action'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PasswordInput } from '@/components/forms/password-input'
 import { Input } from '@/components/ui/input'
 import { updatePasswordAction, updateProfileAction } from '@/lib/actions/auth'
 
@@ -51,10 +52,10 @@ export function PasswordForm() {
       <CardContent>
         <form action={formAction} onSubmit={onSubmit} className="space-y-4" noValidate>
           <Field label="New password" name="password" error={errors.password}>
-            {(p) => <Input {...p} type="password" autoComplete="new-password" className="h-10" />}
+            {(p) => <PasswordInput {...p} autoComplete="new-password" className="h-10" />}
           </Field>
           <Field label="Confirm new password" name="confirm_password" error={errors.confirm_password}>
-            {(p) => <Input {...p} type="password" autoComplete="new-password" className="h-10" />}
+            {(p) => <PasswordInput {...p} autoComplete="new-password" className="h-10" />}
           </Field>
           <div className="flex justify-end">
             <SubmitButton pendingLabel="Updating…" variant="secondary">
