@@ -48,9 +48,13 @@ export async function createSignedUrl(
   bucket: (typeof STORAGE_BUCKETS)[keyof typeof STORAGE_BUCKETS],
   path: string,
   expiresIn: number = SIGNED_URL_TTL,
+  /** Nome do arquivo para forcar o download em vez de abrir no navegador. */
+  downloadAs?: string,
 ): Promise<string | null> {
   const supabase = await createClient()
-  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn)
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .createSignedUrl(path, expiresIn, downloadAs ? { download: downloadAs } : undefined)
 
   if (error) return null
   return data?.signedUrl ?? null

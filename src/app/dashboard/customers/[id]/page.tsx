@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { FileTextIcon, MailIcon, PhoneIcon } from 'lucide-react'
+import { DownloadIcon, ExternalLinkIcon, FileTextIcon, MailIcon, PhoneIcon } from 'lucide-react'
 
 import { DocumentReviewForm } from '@/components/dashboard/document-review-form'
 import { PageHeader } from '@/components/dashboard/page-header'
@@ -154,17 +154,40 @@ export default async function CustomerDetailPage({ params }: { params: Params })
   )
 }
 
+/**
+ * Preview do arquivo enviado, para revisar sem sair da pagina. A imagem (ou o
+ * PDF) vem da mesma rota protegida do link "Open": a RLS confere o acesso e o
+ * link assinado expira em minutos. Clicar no preview abre o arquivo inteiro.
+ */
 function DocumentFileLink({ document }: { document: CustomerDocument }) {
+  const href = `/dashboard/files/customer/${document.id}`
+  const name = document.file_name ?? document.file_path.split('/').pop() ?? 'Document'
+  const isPdf = /.pdf$/i.test(name) || /.pdf$/i.test(document.file_path)
+
   return (
-    <a
-      href={`/dashboard/files/customer/${document.id}`}
-      target="_blank"
-      rel="noreferrer"
-      className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm transition-colors hover:border-brand/40"
-    >
-      <FileTextIcon className="size-5 shrink-0 text-brand" />
-      <span className="min-w-0 flex-1 truncate">{document.file_name ?? 'Document'}</span>
-      <span className="text-xs text-muted-foreground">Open</span>
-    </a>
+    <div className="overflow-hidden rounded-lg border border-border bg-muted/40">
+      {isPdf ? (
+        <iframe src={`${href}#toolbar=0&view=FitH`} title={name} className="h-96 w-full bg-white" loading="lazy" />
+      ) : (
+        <a href={href} target="_blank" rel="noreferrer" className="block bg-black/40" title="Open full size">
+          {/* Imagem privada via redirect para link assinado: o next/image nao otimiza isso. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={href} alt={name} loading="lazy" className="mx-auto max-h-96 w-auto object-contain" />
+        </a>
+      )}
+
+      <div className="flex items-center gap-3 border-t border-border px-3 py-2.5 text-sm">
+        <FileTextIcon className="size-5 shrink-0 text-brand" />
+        <span className="min-w-0 flex-1 truncate">{name}</span>
+        <a href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <ExternalLinkIcon className="size-3.5" />
+          Open
+        </a>
+        <a href={`${href}?download=1`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <DownloadIcon className="size-3.5" />
+          Download
+        </a>
+      </div>
+    </div>
   )
 }
