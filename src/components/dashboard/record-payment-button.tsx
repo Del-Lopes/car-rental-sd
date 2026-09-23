@@ -62,9 +62,9 @@ export function RecordPaymentButton({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size={size} variant="secondary" />}>
+      <DialogTrigger render={<Button size={size} />}>
         <BanknoteIcon />
-        Received
+        Add payment
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
