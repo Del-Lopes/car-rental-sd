@@ -49,13 +49,14 @@ function insuranceLabel(rental: RentalDue, agreement: RentalAgreementInfo): stri
   return 'Not set'
 }
 
-/** Data de hoje e a data do proximo vencimento sugerida para cada plano. */
+/** Data de hoje e o vencimento seguinte a uma data de inicio, conforme o plano. */
 function today(): string {
   return todayIso()
 }
 
-function suggestedDue(plan: RentalPlan): string {
-  return shiftDateIso(todayIso(), plan === 'weekly' ? { days: 7 } : { months: 1 })
+function dueAfter(startedOn: string, plan: RentalPlan): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startedOn)) return startedOn
+  return shiftDateIso(startedOn, plan === 'weekly' ? { days: 7 } : { months: 1 })
 }
 
 export function RentalPanel({
@@ -108,6 +109,22 @@ function StartRental({
   // O plano define o valor e a data sugeridos; o dono ainda pode trocar os dois.
   const [plan, setPlan] = useState<RentalPlan>('weekly')
   const [customerId, setCustomerId] = useState('')
+  // O vencimento acompanha inicio + plano ate que o dono digite uma data propria;
+  // trocar o plano recomeca o ciclo e volta a sugerir.
+  const [startedOn, setStartedOn] = useState(today)
+  const [dueOn, setDueOn] = useState(() => dueAfter(today(), 'weekly'))
+  const [dueEdited, setDueEdited] = useState(false)
+
+  const changePlan = (next: RentalPlan) => {
+    setPlan(next)
+    setDueEdited(false)
+    setDueOn(dueAfter(startedOn, next))
+  }
+
+  const changeStart = (next: string) => {
+    setStartedOn(next)
+    if (!dueEdited) setDueOn(dueAfter(next, plan))
+  }
 
   return (
     <Card>
@@ -157,7 +174,7 @@ function StartRental({
                 <select
                   {...p}
                   value={plan}
-                  onChange={(event) => setPlan(event.target.value as RentalPlan)}
+                  onChange={(event) => changePlan(event.target.value as RentalPlan)}
                   className={nativeSelectClass}
                 >
                   {Object.entries(RENTAL_PLAN_META).map(([value, meta]) => (
@@ -190,10 +207,40 @@ function StartRental({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Start date" name="started_on" error={errors.started_on}>
-              {(p) => <Input {...p} type="date" defaultValue={today()} className="h-9" />}
+              {(p) => (
+                <Input
+                  {...p}
+                  type="date"
+                  value={startedOn}
+                  onChange={(event) => changeStart(event.target.value)}
+                  className="h-9"
+                />
+              )}
             </Field>
-            <Field label="Next payment due" name="next_due_on" error={errors.next_due_on}>
-              {(p) => <Input {...p} key={plan} type="date" defaultValue={suggestedDue(plan)} className="h-9" />}
+            <Field
+              label="Next payment due"
+              name="next_due_on"
+              error={errors.next_due_on}
+              hint={
+                dueEdited
+                  ? undefined
+                  : plan === 'weekly'
+                    ? 'Filled automatically: 7 days after the start date.'
+                    : 'Filled automatically: one month after the start date.'
+              }
+            >
+              {(p) => (
+                <Input
+                  {...p}
+                  type="date"
+                  value={dueOn}
+                  onChange={(event) => {
+                    setDueEdited(true)
+                    setDueOn(event.target.value)
+                  }}
+                  className="h-9"
+                />
+              )}
             </Field>
           </div>
 

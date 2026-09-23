@@ -27,7 +27,14 @@ export function todayIso(): string {
 /** Soma dias ou meses a uma data "YYYY-MM-DD" sem passar por UTC. */
 export function shiftDateIso(value: string, { days = 0, months = 0 }: { days?: number; months?: number }): string {
   const date = parseDateOnly(value)
-  date.setMonth(date.getMonth() + months)
+  if (months) {
+    // 31/01 + 1 mes vira 28/02, e nao 03/03: o dia e limitado ao fim do mes.
+    const day = date.getDate()
+    date.setDate(1)
+    date.setMonth(date.getMonth() + months)
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+    date.setDate(Math.min(day, lastDay))
+  }
   date.setDate(date.getDate() + days)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
