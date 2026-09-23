@@ -9,6 +9,7 @@ import { VehicleImage } from '@/components/site/vehicle-image'
 import { buttonVariants } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { requireAdmin } from '@/lib/auth'
+import { listActiveRentals } from '@/lib/data/rentals'
 import { coverPhoto, currentDocument, listVehiclesForAdmin } from '@/lib/data/vehicles'
 import { daysUntil, urgencyFor } from '@/lib/expiry'
 import { formatCurrency, formatMonthYear, vehicleTitle } from '@/lib/format'
@@ -22,7 +23,14 @@ export default async function VehiclesPage({
   searchParams: Promise<{ deleted?: string }>
 }) {
   await requireAdmin()
-  const [vehicles, { deleted }] = await Promise.all([listVehiclesForAdmin(), searchParams])
+  const [vehicles, activeRentals, { deleted }] = await Promise.all([
+    listVehiclesForAdmin(),
+    listActiveRentals(),
+    searchParams,
+  ])
+
+  // Plano em vigor por carro: a coluna correspondente fica em destaque.
+  const planByVehicle = new Map(activeRentals.map((rental) => [rental.vehicle_id, rental.plan]))
 
   return (
     <>
@@ -73,6 +81,7 @@ export default async function VehiclesPage({
               {vehicles.map((vehicle) => {
                 const registration = currentDocument(vehicle.vehicle_documents, 'registration')
                 const days = registration?.expires_at ? daysUntil(registration.expires_at) : null
+                const rentedPlan = planByVehicle.get(vehicle.id)
 
                 return (
                   <TableRow key={vehicle.id} className="group">
@@ -98,10 +107,8 @@ export default async function VehiclesPage({
                       <VehicleStatusBadge status={vehicle.status} />
                     </TableCell>
                     <TableCell className="hidden font-mono text-xs md:table-cell">{vehicle.plate ?? '—'}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatCurrency(vehicle.weekly_rate)}</TableCell>
-                    <TableCell className="hidden text-right tabular-nums sm:table-cell">
-                      {formatCurrency(vehicle.monthly_rate)}
-                    </TableCell>
+                    <RateCell value={vehicle.weekly_rate} active={rentedPlan === 'weekly'} />
+                    <RateCell value={vehicle.monthly_rate} active={rentedPlan === 'monthly'} className="hidden sm:table-cell" />
                     <TableCell className="pr-4">
                       {registration?.expires_at && days !== null ? (
                         <span className="flex items-center gap-2">
@@ -120,5 +127,25 @@ export default async function VehiclesPage({
         </div>
       )}
     </>
+  )
+}
+
+/**
+ * Preco do plano. Quando o carro esta alugado naquele plano, o valor ganha
+ * destaque: basta bater o olho para saber se a locacao e semanal ou mensal.
+ */
+function RateCell({ value, active, className }: { value: number; active: boolean; className?: string }) {
+  return (
+    <TableCell className={cn('text-right tabular-nums', className)}>
+      <span
+        className={cn(
+          active && 'rounded-md bg-brand/15 px-2 py-1 font-semibold text-brand ring-1 ring-inset ring-brand/30',
+        )}
+        title={active ? 'Current rental plan' : undefined}
+      >
+        {active && <span className="sr-only">Current rental plan: </span>}
+        {formatCurrency(value)}
+      </span>
+    </TableCell>
   )
 }
