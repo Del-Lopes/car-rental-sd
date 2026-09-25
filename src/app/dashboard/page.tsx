@@ -174,25 +174,46 @@ export default async function DashboardHomePage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="pl-6">Vehicle</TableHead>
-                  <TableHead>Renter</TableHead>
+                  <TableHead className="hidden sm:table-cell">Renter</TableHead>
                   <TableHead className="hidden sm:table-cell">Plan</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Due</TableHead>
+                  <TableHead className="hidden sm:table-cell">Due</TableHead>
                   <TableHead className="pr-6 text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {dueRentals.map((rental) => (
                   <TableRow key={rental.id}>
-                    <TableCell className="pl-6">
-                      <Link href={`/dashboard/vehicles/${rental.vehicle_id}`} className="font-medium hover:text-brand">
+                    <TableCell className="max-w-[40vw] pl-6 sm:max-w-none">
+                      <Link href={`/dashboard/vehicles/${rental.vehicle_id}`} className="block truncate font-medium hover:text-brand">
                         {rental.year} {rental.make} {rental.model}
                       </Link>
-                      {rental.plate && (
-                        <span className="block font-mono text-xs text-muted-foreground">{rental.plate}</span>
-                      )}
+                      <span className="block text-xs text-muted-foreground">
+                        {/* No celular o locatario e a placa dividem a linha do carro. */}
+                        <span className="sm:hidden">{rental.renter}</span>
+                        {rental.plate && (
+                          <span className="font-mono sm:block">
+                            <span className="sm:hidden"> · </span>
+                            {rental.plate}
+                          </span>
+                        )}
+                      </span>
+                      {/* No celular o vencimento acompanha o carro; a coluna some. */}
+                      <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs sm:hidden">
+                        <span className="tabular-nums text-muted-foreground">
+                          Due {formatDate(rental.next_due_on)}
+                        </span>
+                        <PaymentUrgencyBadge
+                          urgency={rental.urgency}
+                          label={
+                            rental.days_to_due < 0
+                              ? `Overdue ${formatDaysToExpire(rental.days_to_due)}`
+                              : PAYMENT_URGENCY_META[rental.urgency].label
+                          }
+                        />
+                      </span>
                     </TableCell>
-                    <TableCell>{rental.renter}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{rental.renter}</TableCell>
                     <TableCell className="hidden sm:table-cell">{RENTAL_PLAN_META[rental.plan].label}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatCurrency(rental.total_amount)}
@@ -202,7 +223,7 @@ export default async function DashboardHomePage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="tabular-nums">{formatDate(rental.next_due_on)}</span>
                         <PaymentUrgencyBadge

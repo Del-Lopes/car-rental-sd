@@ -54,7 +54,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
                 <TableHead className="pl-4">Customer</TableHead>
                 <TableHead className="hidden md:table-cell">Phone</TableHead>
                 <TableHead className="hidden sm:table-cell">Joined</TableHead>
-                <TableHead>Documents</TableHead>
+                <TableHead className="hidden sm:table-cell">Documents</TableHead>
                 <TableHead className="pr-4 text-right">
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -63,15 +63,19 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
             <TableBody>
               {customers.map((customer) => (
                 <TableRow key={customer.profile_id}>
-                  <TableCell className="pl-4">
-                    <Link href={customerHref(customer)} className="block font-medium hover:text-brand">
+                  <TableCell className="max-w-[45vw] pl-4 sm:max-w-none">
+                    <Link href={customerHref(customer)} className="block truncate font-medium hover:text-brand">
                       {customer.full_name ?? 'Unnamed customer'}
                     </Link>
-                    <span className="text-xs text-muted-foreground">{customer.email}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{customer.email}</span>
+                    {/* No celular nao ha espaco para uma coluna so dos documentos. */}
+                    <span className="mt-1.5 flex sm:hidden">
+                      <DocumentsSummary customer={customer} />
+                    </span>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{customer.phone ?? '—'}</TableCell>
                   <TableCell className="hidden tabular-nums sm:table-cell">{formatDate(customer.created_at)}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <DocumentsSummary customer={customer} />
                   </TableCell>
                   <TableCell className="pr-4 text-right">

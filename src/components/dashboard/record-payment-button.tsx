@@ -64,7 +64,7 @@ export function RecordPaymentButton({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size={size} />}>
         <BanknoteIcon />
-        Add payment
+        Add<span className="hidden sm:inline">&nbsp;payment</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

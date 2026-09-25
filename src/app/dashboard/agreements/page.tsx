@@ -52,7 +52,7 @@ export default async function AgreementsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="pl-4">Vehicle</TableHead>
-                {isAdmin && <TableHead>Customer</TableHead>}
+                {isAdmin && <TableHead className="hidden sm:table-cell">Customer</TableHead>}
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden sm:table-cell">Date</TableHead>
                 <TableHead className="pr-4 text-right">Action</TableHead>
@@ -64,8 +64,20 @@ export default async function AgreementsPage() {
                 const needsMySignature = !isAdmin && status.label === 'Awaiting signature'
                 return (
                   <TableRow key={agreement.id}>
-                    <TableCell className="pl-4 font-medium">{agreement.vehicle_label}</TableCell>
-                    {isAdmin && <TableCell>{agreement.customer_name ?? agreement.customer_email ?? '—'}</TableCell>}
+                    <TableCell className="max-w-[45vw] pl-4 font-medium sm:max-w-none">
+                      <span className="block truncate">{agreement.vehicle_label}</span>
+                      {/* No celular o nome do cliente vem aqui, sem coluna propria. */}
+                      {isAdmin && (
+                        <span className="block truncate text-xs font-normal text-muted-foreground sm:hidden">
+                          {agreement.customer_name ?? agreement.customer_email ?? '—'}
+                        </span>
+                      )}
+                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="hidden sm:table-cell">
+                        {agreement.customer_name ?? agreement.customer_email ?? '—'}
+                      </TableCell>
+                    )}
                     <TableCell>
                       <ToneBadge tone={status.tone}>{status.label}</ToneBadge>
                     </TableCell>
