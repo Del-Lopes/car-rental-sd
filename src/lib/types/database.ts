@@ -473,6 +473,8 @@ export interface Database {
           documents_approved: number
           documents_rejected: number
           required_missing: number
+          /** Aprovados cuja validade ja passou (carteira vencida, por exemplo). */
+          documents_expired: number
         }
         Relationships: []
       }
@@ -507,7 +509,15 @@ export interface Database {
         Returns: undefined
       }
       register_rental_payment: {
-        Args: { p_rental_id: string; p_amount?: number | null; p_paid_on?: string }
+        Args: {
+          p_rental_id: string
+          p_amount?: number | null
+          p_paid_on?: string
+          /** false registra o valor sem empurrar o vencimento (pagamento parcial). */
+          p_advance_due?: boolean
+          /** Vencimento que a tela mostrou; se ja mudou, o banco recusa (clique duplo). */
+          p_expected_due?: string | null
+        }
         Returns: Database['public']['Tables']['rentals']['Row']
       }
     }

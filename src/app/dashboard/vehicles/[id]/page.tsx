@@ -141,6 +141,7 @@ export default async function EditVehiclePage({
             categories={categories}
             vehicle={vehicle}
             submitLabel="Save changes"
+            statusLocked={Boolean(rental)}
           />
         </div>
 

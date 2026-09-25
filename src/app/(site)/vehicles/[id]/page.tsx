@@ -9,9 +9,10 @@ import { VehicleGallery } from '@/components/site/vehicle-gallery'
 import { buttonVariants } from '@/components/ui/button'
 import { getCurrentProfile } from '@/lib/auth'
 import { FUEL_LABELS, TRANSMISSION_LABELS } from '@/lib/constants'
-import { getPublicVehicle, listPublicVehicles, sortedPhotos } from '@/lib/data/vehicles'
+import { coverPhoto, getPublicVehicle, listPublicVehicles, sortedPhotos, type PublicVehicle } from '@/lib/data/vehicles'
 import { formatCurrency, formatMileage, vehicleTitle } from '@/lib/format'
 import { SERVICE_AREA } from '@/lib/rental-terms'
+import { SITE_URL } from '@/lib/env'
 import { vehiclePhotoUrl } from '@/lib/storage-url'
 import { cn } from '@/lib/utils'
 
@@ -25,11 +26,17 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const title = vehicleTitle(vehicle)
   const description = `${title} for rent from ${formatCurrency(vehicle.weekly_rate)}/week or ${formatCurrency(vehicle.monthly_rate)}/month. Unlimited mileage within ${SERVICE_AREA}.`
 
+  const cover = coverPhoto(vehicle)
+  // Sem images aqui, o openGraph do layout (o logo) seria substituido e o link
+  // ficaria sem imagem nenhuma ao ser colado no WhatsApp.
+  const images = [cover ? vehiclePhotoUrl(cover.storage_path) : '/Logo_carental.jpeg']
+
   return {
     title,
     description,
     alternates: { canonical: `/vehicles/${vehicle.id}` },
-    openGraph: { title, description },
+    openGraph: { type: 'website', siteName: 'Carental', title, description, images },
+    twitter: { card: 'summary_large_image', title, description, images },
   }
 }
 
@@ -102,9 +109,13 @@ export default async function VehicleDetailPage({ params }: { params: Params }) 
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-24">
+          {/* Mesmo titulo em duas posicoes conforme a largura. So um deles e <h1> de
+              verdade; o outro repete visualmente, escondido de buscadores e leitores. */}
           <div className="hidden space-y-3 lg:block">
-            <VehicleHeading vehicle={vehicle} />
+            <VehicleHeading vehicle={vehicle} decorative />
           </div>
+
+          <VehicleJsonLd vehicle={vehicle} title={title} imageUrl={photos[0]?.url ?? null} />
 
           <div className="space-y-5 rounded-xl border border-border bg-card p-6">
             <div className="grid grid-cols-2 gap-4">
@@ -179,19 +190,68 @@ export default async function VehicleDetailPage({ params }: { params: Params }) 
 
 function VehicleHeading({
   vehicle,
+  decorative = false,
 }: {
   vehicle: { year: number; make: string; model: string; vehicle_categories: { label: string } | null }
+  /** Copia visual para outro ponto do layout: nao e cabecalho nem e lida em voz alta. */
+  decorative?: boolean
 }) {
+  const Title = decorative ? 'p' : 'h1'
   return (
-    <>
+    <div aria-hidden={decorative || undefined}>
       {vehicle.vehicle_categories && (
         <p className="eyebrow text-brand">{vehicle.vehicle_categories.label}</p>
       )}
-      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+      <Title className="text-3xl font-semibold tracking-tight sm:text-4xl">
         <span className="block text-base font-normal text-muted-foreground">{vehicle.year}</span>
         {vehicle.make} {vehicle.model}
-      </h1>
-    </>
+      </Title>
+    </div>
+  )
+}
+
+/**
+ * Dados estruturados do carro: e o que permite ao Google mostrar preco e foto
+ * direto no resultado da busca. O preco anunciado e o semanal.
+ */
+function VehicleJsonLd({
+  vehicle,
+  title,
+  imageUrl,
+}: {
+  vehicle: PublicVehicle
+  title: string
+  imageUrl: string | null
+}) {
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'Car',
+    name: title,
+    brand: { '@type': 'Brand', name: vehicle.make },
+    model: vehicle.model,
+    vehicleModelDate: String(vehicle.year),
+    url: `${SITE_URL}/vehicles/${vehicle.id}`,
+    ...(imageUrl ? { image: imageUrl } : {}),
+    ...(vehicle.description ? { description: vehicle.description } : {}),
+    ...(vehicle.seats ? { seatingCapacity: vehicle.seats } : {}),
+    ...(vehicle.fuel ? { fuelType: FUEL_LABELS[vehicle.fuel] } : {}),
+    vehicleTransmission: TRANSMISSION_LABELS[vehicle.transmission],
+    offers: {
+      '@type': 'Offer',
+      price: vehicle.weekly_rate,
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock',
+      url: `${SITE_URL}/vehicles/${vehicle.id}`,
+      areaServed: { '@type': 'AdministrativeArea', name: SERVICE_AREA },
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      // Conteudo montado por nos a partir do banco; sem entrada livre de visitante.
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
   )
 }
 

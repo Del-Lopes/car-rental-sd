@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { dateString, optionalDecimal, optionalText, requiredDecimal, uuid } from '@/lib/validation/common'
+import { checkbox, dateString, optionalDate, optionalDecimal, optionalText, requiredDecimal, uuid } from '@/lib/validation/common'
 
 /**
  * Locacao registrada manualmente pelo dono: quem alugou, qual plano, quanto
@@ -38,6 +38,10 @@ export const rentalPaymentSchema = z.object({
   rental_id: uuid,
   amount: requiredDecimal('Amount', 0, 500_000),
   paid_on: dateString,
+  // Desmarcado = recebimento parcial: entra no historico sem quitar o ciclo.
+  advance_due: checkbox,
+  // Vencimento que estava na tela, para o banco recusar o registro repetido.
+  expected_due: optionalDate,
 })
 
 /** Correcao de dados de uma locacao em andamento. */

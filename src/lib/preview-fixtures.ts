@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { daysUntil, paymentUrgencyFor, urgencyFor } from '@/lib/expiry'
-import { lastDayOfMonth } from '@/lib/format'
+import { lastDayOfMonth, todayIso } from '@/lib/format'
 import type {
   AdminDashboardStats,
   CustomerDocument,
@@ -213,6 +213,9 @@ export function fixtureCustomerSummaries(): CustomerDocumentSummary[] {
       documents_approved: documents.filter((doc) => doc.status === 'approved').length,
       documents_rejected: documents.filter((doc) => doc.status === 'rejected').length,
       required_missing: requiredMissing,
+      documents_expired: documents.filter(
+        (doc) => doc.status === 'approved' && doc.expires_at !== null && doc.expires_at < todayIso(),
+      ).length,
     }
   })
 }

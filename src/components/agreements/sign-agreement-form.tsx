@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { FileSignatureIcon } from 'lucide-react'
 
 import { Field } from '@/components/forms/field'
@@ -34,7 +36,17 @@ export function SignAgreementForm({
   /** "week" ou "month". */
   cycleLabel: string
 }) {
-  const { formAction, onSubmit, values, errors } = useFormAction(signAgreementAction)
+  const { state, formAction, onSubmit, values, errors } = useFormAction(signAgreementAction)
+  const router = useRouter()
+
+  // Se o admin publicou novos termos (ou mexeu no seguro) enquanto esta tela
+  // estava aberta, o banco recusa a assinatura. Sem recarregar, toda nova
+  // tentativa falharia igual: a pagina se atualiza sozinha com o texto novo.
+  useEffect(() => {
+    if (!state.ok && state.message && /updated|not available/i.test(state.message)) {
+      router.refresh()
+    }
+  }, [state, router])
 
   return (
     <form action={formAction} onSubmit={onSubmit} className="space-y-5" noValidate>

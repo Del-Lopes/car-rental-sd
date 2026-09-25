@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+import { translateDbError } from '@/lib/actions/db-error'
 import { requireAdmin, requireProfile } from '@/lib/auth'
 import { buildAgreementEmail } from '@/lib/email/agreement-email'
 import { isEmailConfigured, sendMail } from '@/lib/email/mailer'
@@ -38,7 +39,7 @@ export async function publishTermsAction(
     .select('version')
     .single()
 
-  if (error) return failure(error.message)
+  if (error) return failure(translateDbError(error.message))
 
   revalidatePath('/dashboard/terms')
   revalidatePath('/terms')
@@ -77,7 +78,7 @@ export async function signAgreementAction(
     if (error.message.includes('must match')) {
       return failure(error.message, { signed_name: [error.message] })
     }
-    return failure(error.message)
+    return failure(translateDbError(error.message))
   }
 
   const delivery = await deliverAgreementEmail(signed.id)

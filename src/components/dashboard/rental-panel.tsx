@@ -193,14 +193,21 @@ function StartRental({
                   type="number"
                   step="0.01"
                   min="0"
-                  defaultValue={plan === 'weekly' ? weeklyRate : monthlyRate}
+                  defaultValue={values.rate_amount ?? (plan === 'weekly' ? weeklyRate : monthlyRate)}
                   className="h-9"
                 />
               )}
             </Field>
             <Field label="Deposit held" name="deposit_amount" error={errors.deposit_amount}>
               {(p) => (
-                <Input {...p} type="number" step="0.01" min="0" defaultValue={securityDeposit ?? ''} className="h-9" />
+                <Input
+                  {...p}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={values.deposit_amount ?? securityDeposit ?? ''}
+                  className="h-9"
+                />
               )}
             </Field>
           </div>
@@ -263,7 +270,7 @@ function StartRental({
                 type="number"
                 step="0.01"
                 min="0"
-                defaultValue={INSURANCE_SUGGESTED_OFFER[plan]}
+                defaultValue={values.insurance_offer_amount ?? INSURANCE_SUGGESTED_OFFER[plan]}
                 className="h-9"
               />
             )}

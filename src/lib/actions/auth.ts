@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+import { translateDbError } from '@/lib/actions/db-error'
 import { requireProfile } from '@/lib/auth'
 import { SITE_URL } from '@/lib/env'
 import { safeRedirectPath } from '@/lib/redirect'
@@ -75,7 +76,7 @@ export async function signUpAction(
     },
   })
 
-  if (error) return failure(error.message)
+  if (error) return failure(translateDbError(error.message))
 
   // O cliente definiu que os documentos sao enviados no cadastro. O upload so
   // pode acontecer com sessao (a policy do Storage exige auth.uid()), entao o
@@ -129,7 +130,7 @@ export async function updatePasswordAction(
   const supabase = await createClient()
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password })
 
-  if (error) return failure(error.message)
+  if (error) return failure(translateDbError(error.message))
   return success('Password updated')
 }
 
@@ -149,7 +150,7 @@ export async function updateProfileAction(
     .update({ full_name: parsed.data.full_name, phone: parsed.data.phone ?? null })
     .eq('id', profile.id)
 
-  if (error) return failure(error.message)
+  if (error) return failure(translateDbError(error.message))
 
   revalidatePath('/dashboard/account')
   return success('Profile updated')

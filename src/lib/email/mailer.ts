@@ -41,6 +41,12 @@ function getTransporter(): Transporter {
     // 465 usa TLS direto; 587 comeca sem e sobe para TLS (STARTTLS).
     secure: SMTP_PORT === 465,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
+    // A assinatura espera o envio terminar. Sem limites, um servidor de e-mail
+    // lento seguraria a requisicao ate a funcao da Vercel morrer -- e o cliente
+    // veria um erro depois de ja ter assinado.
+    connectionTimeout: 8_000,
+    greetingTimeout: 8_000,
+    socketTimeout: 15_000,
   })
   return transporter
 }

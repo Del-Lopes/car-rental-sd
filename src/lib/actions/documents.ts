@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 
+import { translateDbError } from '@/lib/actions/db-error'
 import { requireAdmin, requireProfile } from '@/lib/auth'
+import { todayIso } from '@/lib/format'
 import { STORAGE_BUCKETS } from '@/lib/constants'
 import { PREVIEW_WRITE_MESSAGE, isPreviewMode } from '@/lib/preview'
 import { getCustomerDocumentTypes } from '@/lib/data/lookups'
@@ -43,10 +45,15 @@ export async function uploadCustomerDocumentAction(
   if (type.requires_expiry && !parsed.data.expires_at) {
     return failure('Check the highlighted fields', { expires_at: ['Enter the expiration date'] })
   }
+  if (parsed.data.expires_at && parsed.data.expires_at < todayIso()) {
+    return failure('Check the highlighted fields', {
+      expires_at: ['This document has already expired. Upload a valid one.'],
+    })
+  }
 
   const file = formData.get('file') as File | null
   const fileError = validateUploadedFile(file)
-  if (fileError) return failure(fileError)
+  if (fileError) return failure(fileError, { file: [fileError] })
 
   const supabase = await createClient()
   const path = buildCustomerDocumentPath(profile.id, file!.name)
@@ -67,7 +74,7 @@ export async function uploadCustomerDocumentAction(
 
   if (error) {
     await supabase.storage.from(STORAGE_BUCKETS.customerDocs).remove([path])
-    return failure(error.message)
+    return failure(translateDbError(error.message))
   }
 
   revalidatePath('/dashboard/documents')
@@ -94,7 +101,7 @@ export async function reviewCustomerDocumentAction(
     .select('profile_id')
     .maybeSingle()
 
-  if (error) return failure(error.message)
+  if (error) return failure(translateDbError(error.message))
   if (!data) return failure('Document not found')
 
   revalidatePath('/dashboard')
@@ -128,7 +135,7 @@ export async function deleteCustomerDocumentAction(documentId: string): Promise<
     .delete()
     .eq('id', documentId)
     .select('id')
-  if (error) return failure(error.message)
+  if (error) return failure(translateDbError(error.message))
   if (!deleted?.length) return failure('This document was already reviewed and can no longer be removed')
 
   await supabase.storage.from(STORAGE_BUCKETS.customerDocs).remove([document.file_path])

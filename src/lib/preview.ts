@@ -11,6 +11,10 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/env'
  * visivel enquanto estiver ativo, entao um deploy sem env nunca passa por real.
  */
 export function isPreviewMode(): boolean {
+  // Em producao o preview deixaria o painel aberto sem login caso uma variavel
+  // de ambiente sumisse. Fora de desenvolvimento ele so liga por pedido
+  // explicito (PREVIEW_MODE=1), usado para mostrar as telas ao cliente.
+  if (process.env.NODE_ENV === 'production' && process.env.PREVIEW_MODE !== '1') return false
   return !SUPABASE_URL || !SUPABASE_ANON_KEY
 }
 

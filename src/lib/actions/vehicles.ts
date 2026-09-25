@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
+import { translateDbError } from '@/lib/actions/db-error'
 import { requireAdmin } from '@/lib/auth'
 import { ACCEPTED_IMAGE_TYPES, STORAGE_BUCKETS } from '@/lib/constants'
 import { PREVIEW_WRITE_MESSAGE, isPreviewMode } from '@/lib/preview'
@@ -63,7 +64,17 @@ export async function updateVehicleAction(
   if (!parsed.success) return validationFailure(parsed.error)
 
   const supabase = await createClient()
-  const { error } = await supabase.from('vehicles').update(parsed.data).eq('id', vehicleId)
+
+  // Carro com locacao aberta fica 'rented' ate a locacao ser encerrada: deixar
+  // o formulario devolve-lo para "available" o colocaria na vitrine alugado.
+  const { count: activeRentals } = await supabase
+    .from('rentals')
+    .select('id', { count: 'exact', head: true })
+    .eq('vehicle_id', vehicleId)
+    .eq('status', 'active')
+
+  const payload = activeRentals ? { ...parsed.data, status: 'rented' as const } : parsed.data
+  const { error } = await supabase.from('vehicles').update(payload).eq('id', vehicleId)
 
   if (error) return failure(translateDbError(error.message))
 
@@ -307,7 +318,7 @@ export async function saveVehicleDocumentAction(
   let filePath: string | null = null
   if (file && file.size > 0) {
     const fileError = validateUploadedFile(file)
-    if (fileError) return failure(fileError)
+    if (fileError) return failure(fileError, { file: [fileError] })
 
     filePath = buildVehicleDocumentPath(parsed.data.vehicle_id, file.name)
     const { error: uploadError } = await supabase.storage
@@ -360,16 +371,3 @@ export async function deleteVehicleDocumentAction(documentId: string): Promise<A
   return success('Document removed')
 }
 
-/** Erros crus do Postgres nao servem para o operador da locadora ler. */
-function translateDbError(message: string): string {
-  if (message.includes('vehicles_plate_key')) return 'Another vehicle already uses this plate'
-  if (message.includes('vehicles_vin_key')) return 'Another vehicle already uses this VIN'
-  // Locacao criada entre a checagem e a exclusao: o banco barra pela chave estrangeira.
-  if (message.includes('rentals_vehicle_id_fkey')) {
-    return 'This vehicle has rental history and cannot be deleted. Move it to reserve instead.'
-  }
-  if (message.includes('violates row-level security')) {
-    return 'You do not have permission to perform this action'
-  }
-  return message
-}

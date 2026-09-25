@@ -14,6 +14,13 @@ const blankToNull = (value: unknown) =>
 export const optionalText = (max = 255) =>
   z.preprocess(blankToNull, z.string().trim().max(max).nullable().optional())
 
+/** Texto opcional normalizado em maiusculas (placa, VIN). */
+export const upperText = (max = 255) =>
+  z.preprocess(
+    (value) => (typeof value === 'string' ? value.trim().toUpperCase() : value),
+    optionalText(max),
+  )
+
 export const requiredText = (label: string, max = 255) =>
   z
     .string()

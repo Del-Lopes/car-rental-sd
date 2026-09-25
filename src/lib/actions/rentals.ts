@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 
+import { translateDbError } from '@/lib/actions/db-error'
 import { requireAdmin } from '@/lib/auth'
 import { todayIso } from '@/lib/format'
 import { PREVIEW_WRITE_MESSAGE, isPreviewMode } from '@/lib/preview'
@@ -43,7 +44,7 @@ export async function startRentalAction(
     renter_name: parsed.data.customer_id ? null : parsed.data.renter_name,
   })
 
-  if (error) return failure(translateRentalError(error.message))
+  if (error) return failure(translateDbError(error.message))
 
   revalidateRentals(parsed.data.vehicle_id)
   return success('Rental started')
@@ -68,9 +69,11 @@ export async function registerRentalPaymentAction(
     p_rental_id: parsed.data.rental_id,
     p_amount: parsed.data.amount,
     p_paid_on: parsed.data.paid_on,
+    p_advance_due: parsed.data.advance_due,
+    p_expected_due: parsed.data.expected_due ?? null,
   })
 
-  if (error) return failure(error.message)
+  if (error) return failure(translateDbError(error.message))
 
   revalidateRentals(data?.vehicle_id)
   return success('Payment recorded')
@@ -100,7 +103,7 @@ export async function updateRentalAction(
     .select('vehicle_id')
     .maybeSingle()
 
-  if (error) return failure(error.message)
+  if (error) return failure(translateDbError(error.message))
   if (!data) return failure('Rental not found')
 
   revalidateRentals(data.vehicle_id)
@@ -113,29 +116,30 @@ export async function closeRentalAction(rentalId: string): Promise<ActionResult>
   if (isPreviewMode()) return failure(PREVIEW_WRITE_MESSAGE)
 
   const supabase = await createClient()
+
+  // Locacao registrada com inicio no futuro nao pode terminar antes de comecar:
+  // o banco barraria o encerramento e o carro ficaria preso como alugado.
+  const { data: rental } = await supabase
+    .from('rentals')
+    .select('started_on')
+    .eq('id', rentalId)
+    .maybeSingle()
+
+  const today = todayIso()
+  const endedOn = rental && rental.started_on > today ? rental.started_on : today
+
   const { data, error } = await supabase
     .from('rentals')
-    .update({ status: 'closed', ended_on: todayIso() })
+    .update({ status: 'closed', ended_on: endedOn })
     .eq('id', rentalId)
+    .eq('status', 'active')
     .select('vehicle_id')
     .maybeSingle()
 
-  if (error) return failure(error.message)
-  if (!data) return failure('Rental not found')
+  if (error) return failure(translateDbError(error.message))
+  if (!data) return failure('This rental is not active anymore. Reload the page.')
 
   revalidateRentals(data.vehicle_id)
-  return success('Rental closed. The vehicle is available again.')
+  return success('Rental closed.')
 }
 
-function translateRentalError(message: string): string {
-  if (message.includes('rentals_one_active_per_vehicle')) {
-    return 'This vehicle already has an active rental'
-  }
-  if (message.includes('rentals_renter_check')) {
-    return 'Select a customer or type who is renting'
-  }
-  if (message.includes('violates row-level security')) {
-    return 'You do not have permission to perform this action'
-  }
-  return message
-}

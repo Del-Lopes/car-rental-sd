@@ -70,8 +70,8 @@ export function RecordPaymentButton({
         <DialogHeader>
           <DialogTitle>Record payment</DialogTitle>
           <DialogDescription>
-            Due {formatDate(dueOn)} · {RENTAL_PLAN_META[plan].label} plan. Saving moves the next due
-            date {RENTAL_PLAN_META[plan].everyDaysLabel}.
+            Due {formatDate(dueOn)} · {RENTAL_PLAN_META[plan].label} plan. A full payment moves the
+            next due date {RENTAL_PLAN_META[plan].everyDaysLabel}.
           </DialogDescription>
         </DialogHeader>
 
@@ -86,6 +86,25 @@ export function RecordPaymentButton({
               {(p) => <Input {...p} type="date" defaultValue={today} className="h-10" required />}
             </Field>
           </div>
+          {/* O banco confere este valor: se o vencimento ja andou (outra aba, ou
+              dois cliques), o registro e recusado em vez de pular dois ciclos. */}
+          <input type="hidden" name="expected_due" value={dueOn} />
+
+          <label className="flex items-start gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              name="advance_due"
+              defaultChecked
+              className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]"
+            />
+            <span>
+              Move the next due date forward
+              <span className="block text-xs text-muted-foreground">
+                Uncheck for a partial payment: the amount is recorded and the cycle stays open.
+              </span>
+            </span>
+          </label>
+
           <p className="text-xs text-muted-foreground">
             Expected for this cycle: {formatCurrency(amount)}
             {Number(insuranceAmount) > 0 && (

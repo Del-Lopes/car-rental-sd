@@ -50,11 +50,16 @@ export async function createSignedUrl(
   expiresIn: number = SIGNED_URL_TTL,
   /** Nome do arquivo para forcar o download em vez de abrir no navegador. */
   downloadAs?: string,
+  /** Reduz a imagem no proprio Storage: o preview nao precisa do original. */
+  preview = false,
 ): Promise<string | null> {
   const supabase = await createClient()
   const { data, error } = await supabase.storage
     .from(bucket)
-    .createSignedUrl(path, expiresIn, downloadAs ? { download: downloadAs } : undefined)
+    .createSignedUrl(path, expiresIn, {
+      ...(downloadAs ? { download: downloadAs } : {}),
+      ...(preview ? { transform: { width: 1200, quality: 65 } } : {}),
+    })
 
   if (error) return null
   return data?.signedUrl ?? null

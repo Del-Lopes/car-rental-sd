@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { isPreviewMode } from '@/lib/preview'
 import {
   fixtureAdmin,
@@ -49,7 +51,7 @@ export async function listCustomers(search?: string): Promise<CustomerDocumentSu
   return data ?? []
 }
 
-export async function getCustomer(profileId: string): Promise<CustomerDetail | null> {
+export const getCustomer = cache(async (profileId: string): Promise<CustomerDetail | null> => {
   if (isPreviewMode()) {
     const customer = fixtureCustomers.find((item) => item.id === profileId)
     if (!customer) return null
@@ -73,7 +75,7 @@ export async function getCustomer(profileId: string): Promise<CustomerDetail | n
   if (error?.code === '22P02') return null
   if (error) throw new Error(`Failed to load customer: ${error.message}`)
   return (data as unknown as CustomerDetail) ?? null
-}
+})
 
 /** Documentos do usuario logado (area do cliente). A RLS ja limita ao dono. */
 export async function listMyDocuments(profileId: string): Promise<CustomerDocument[]> {

@@ -7,6 +7,7 @@ import { VehicleFilters } from '@/components/site/vehicle-filters'
 import { buttonVariants } from '@/components/ui/button'
 import { listPublicVehicles } from '@/lib/data/vehicles'
 import { getVehicleCategories } from '@/lib/data/lookups'
+import { SITE_URL } from '@/lib/env'
 import { formatCurrency } from '@/lib/format'
 import { SERVICE_AREA } from '@/lib/rental-terms'
 import { SITE_CONFIG } from '@/lib/site'
@@ -49,11 +50,17 @@ const STEPS = [
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
   const filters = parseFilters(await searchParams)
 
-  const [vehicles, categories, allVehicles] = await Promise.all([
+  const hasFilters = Object.values(filters).some(Boolean)
+
+  // Sem filtro, as duas consultas seriam identicas: a frota inteira serve tanto
+  // para a lista quanto para os numeros do topo.
+  const [vehicles, categories, fullFleet] = await Promise.all([
     listPublicVehicles(filters),
     getVehicleCategories(),
-    listPublicVehicles(),
+    hasFilters ? listPublicVehicles() : Promise.resolve(null),
   ])
+
+  const allVehicles = fullFleet ?? vehicles
 
   const lowestWeekly = allVehicles.length
     ? Math.min(...allVehicles.map((vehicle) => vehicle.weekly_rate))
@@ -236,8 +243,17 @@ function JsonLd() {
     name: SITE_CONFIG.name,
     slogan: SITE_CONFIG.tagline,
     description: SITE_CONFIG.description,
-    image: '/Logo_carental.jpeg',
+    // Buscadores exigem URL absoluta; caminho relativo e ignorado.
+    url: SITE_URL,
+    image: `${SITE_URL}/Logo_carental.jpeg`,
+    areaServed: { '@type': 'AdministrativeArea', name: SERVICE_AREA },
     priceRange: '$$',
+    // So entram os contatos que o cliente ja confirmou.
+    ...(SITE_CONFIG.contact.phone ? { telephone: SITE_CONFIG.contact.phone } : {}),
+    ...(SITE_CONFIG.contact.email ? { email: SITE_CONFIG.contact.email } : {}),
+    ...(SITE_CONFIG.contact.city
+      ? { address: { '@type': 'PostalAddress', addressLocality: SITE_CONFIG.contact.city, addressRegion: 'CA', addressCountry: 'US' } }
+      : {}),
   }
 
   return (

@@ -36,11 +36,14 @@ export function VehicleForm({
   categories,
   vehicle,
   submitLabel,
+  statusLocked = false,
 }: {
   action: Action
   categories: VehicleCategory[]
   vehicle?: Vehicle
   submitLabel: string
+  /** Locacao aberta manda no status: quem devolve o carro a vitrine e o encerramento. */
+  statusLocked?: boolean
 }) {
   const { formAction, onSubmit, values, errors } = useFormAction(action, toValues(vehicle))
   const input = 'h-9'
@@ -157,10 +160,19 @@ export function VehicleForm({
               label="Status"
               name="status"
               error={errors.status}
-              hint="Only available vehicles appear in the public fleet."
+              hint={
+                statusLocked
+                  ? 'This vehicle is rented. Close the rental to change its status.'
+                  : 'Only available vehicles appear in the public fleet.'
+              }
             >
               {(p) => (
-                <select {...p} defaultValue={values.status} className={nativeSelectClass}>
+                <select
+                  {...p}
+                  defaultValue={values.status}
+                  disabled={statusLocked}
+                  className={nativeSelectClass}
+                >
                   {Object.entries(VEHICLE_STATUS_META).map(([value, meta]) => (
                     <option key={value} value={value}>
                       {meta.label}

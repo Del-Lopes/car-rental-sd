@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { isPreviewMode } from '@/lib/preview'
 import { fixtureAgreements, fixtureTerms } from '@/lib/preview-fixtures'
 import { createClient } from '@/lib/supabase/server'
@@ -44,7 +46,7 @@ export async function listTermsVersions(): Promise<TermsVersion[]> {
  * Contratos visiveis para quem esta logado: a RLS devolve todos para o admin e
  * so os proprios para o cliente -- a mesma consulta serve as duas telas.
  */
-export async function listAgreements(): Promise<RentalAgreementView[]> {
+export const listAgreements = cache(async (): Promise<RentalAgreementView[]> => {
   if (isPreviewMode()) return fixtureAgreements()
 
   const supabase = await createClient()
@@ -55,7 +57,7 @@ export async function listAgreements(): Promise<RentalAgreementView[]> {
 
   if (error) throw new Error(`Failed to load agreements: ${error.message}`)
   return data ?? []
-}
+})
 
 export async function getAgreement(id: string): Promise<RentalAgreementView | null> {
   if (isPreviewMode()) return fixtureAgreements().find((agreement) => agreement.id === id) ?? null

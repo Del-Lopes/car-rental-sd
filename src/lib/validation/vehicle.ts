@@ -8,6 +8,7 @@ import {
   optionalText,
   requiredDecimal,
   requiredText,
+  upperText,
   uuid,
 } from '@/lib/validation/common'
 
@@ -32,8 +33,9 @@ export const vehicleFormSchema = z.object({
   doors: optionalInt(1, 8),
   color: optionalText(40),
   mileage: optionalInt(0, 2_000_000),
-  plate: optionalText(20),
-  vin: optionalText(30),
+  // Exibidos e gravados em maiusculas; a tela ja mostra assim.
+  plate: upperText(20),
+  vin: upperText(30),
   // Sem diaria: a locadora so aluga por semana ou por mes.
   weekly_rate: requiredDecimal('Weekly rate', 0, 100_000),
   monthly_rate: requiredDecimal('Monthly rate', 0, 500_000),

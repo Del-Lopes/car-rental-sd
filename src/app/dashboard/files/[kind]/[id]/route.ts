@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { getCurrentProfile } from '@/lib/auth'
-import { STORAGE_BUCKETS } from '@/lib/constants'
+import { SIGNED_URL_TTL, STORAGE_BUCKETS } from '@/lib/constants'
 import { isPreviewMode } from '@/lib/preview'
 import { createSignedUrl } from '@/lib/storage'
 import { createClient } from '@/lib/supabase/server'
@@ -55,8 +55,17 @@ async function redirectToSigned(
   if (!path) return new NextResponse('Not found', { status: 404 })
 
   const downloadAs = download ? (fileName ?? path.split('/').pop() ?? 'document') : undefined
-  const url = await createSignedUrl(bucket, path, undefined, downloadAs)
+  // Preview de imagem sai reduzido pelo proprio Storage: a foto de documento
+  // original chega a varios MB e seria baixada inteira a cada visita.
+  const preview = !download && /\.(jpe?g|png|webp|avif)$/i.test(path)
+  const url = await createSignedUrl(bucket, path, undefined, downloadAs, preview)
   if (!url) return new NextResponse('Not found', { status: 404 })
 
-  return NextResponse.redirect(url)
+  return NextResponse.redirect(url, {
+    headers: {
+      // Menos que o tempo de vida do link assinado, para o navegador nunca
+      // reaproveitar um link ja expirado. "private": nunca em cache publico.
+      'Cache-Control': `private, max-age=${SIGNED_URL_TTL - 60}`,
+    },
+  })
 }

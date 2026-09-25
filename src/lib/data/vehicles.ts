@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { isPreviewMode } from '@/lib/preview'
 import {
   fixtureCategories,
@@ -93,7 +95,7 @@ export async function listPublicVehicles(
   return (data ?? []) as unknown as PublicVehicle[]
 }
 
-export async function getPublicVehicle(id: string): Promise<PublicVehicle | null> {
+export const getPublicVehicle = cache(async (id: string): Promise<PublicVehicle | null> => {
   if (isPreviewMode()) {
     return previewPublicVehicles({}).find((vehicle) => vehicle.id === id) ?? null
   }
@@ -111,7 +113,7 @@ export async function getPublicVehicle(id: string): Promise<PublicVehicle | null
   if (error?.code === '22P02') return null
   if (error) throw new Error(`Failed to load vehicle: ${error.message}`)
   return (data as unknown as PublicVehicle) ?? null
-}
+})
 
 /**
  * Lista do painel: inclui arquivados, colunas internas e os documentos -- a
@@ -138,7 +140,7 @@ export async function listVehiclesForAdmin(): Promise<AdminVehicleDetail[]> {
   return (data ?? []) as unknown as AdminVehicleDetail[]
 }
 
-export async function getVehicleForAdmin(id: string): Promise<AdminVehicleDetail | null> {
+export const getVehicleForAdmin = cache(async (id: string): Promise<AdminVehicleDetail | null> => {
   if (isPreviewMode()) {
     const vehicle = fixtureVehicles.find((item) => item.id === id)
     if (!vehicle) return null
@@ -161,7 +163,7 @@ export async function getVehicleForAdmin(id: string): Promise<AdminVehicleDetail
   if (error?.code === '22P02') return null
   if (error) throw new Error(`Failed to load vehicle: ${error.message}`)
   return (data as unknown as AdminVehicleDetail) ?? null
-}
+})
 
 /**
  * Documento vigente de um tipo (hoje, a registration): o de vencimento mais

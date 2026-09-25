@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { cache } from 'react'
+
 import { DASHBOARD_URGENCIES, EXPIRY_HORIZON_DAYS, URGENCY_META } from '@/lib/constants'
 import { isPreviewMode } from '@/lib/preview'
 import { fixtureDashboardStats, fixtureExpiringDocuments } from '@/lib/preview-fixtures'
@@ -22,8 +24,11 @@ const EMPTY_STATS: AdminDashboardStats = {
   vehicles_reserve: 0,
 }
 
-/** Cards do topo do dashboard: uma linha, uma ida ao banco. */
-export async function getDashboardStats(): Promise<AdminDashboardStats> {
+/**
+ * Cards do topo do dashboard: uma linha, uma ida ao banco.
+ * `cache` porque o layout e a pagina pedem os mesmos numeros no mesmo request.
+ */
+export const getDashboardStats = cache(async (): Promise<AdminDashboardStats> => {
   if (isPreviewMode()) return fixtureDashboardStats()
 
   const supabase = await createClient()
@@ -32,7 +37,7 @@ export async function getDashboardStats(): Promise<AdminDashboardStats> {
 
   if (error) throw new Error(`Failed to load dashboard stats: ${error.message}`)
   return data ?? EMPTY_STATS
-}
+})
 
 /**
  * Documentos de veiculo que vencem dentro do horizonte, do mais urgente para o
