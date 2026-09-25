@@ -72,9 +72,9 @@ export default async function VehiclesPage({
                 <TableHead className="pl-4">Vehicle</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="hidden md:table-cell">Plate</TableHead>
-                <TableHead className="text-right">Weekly</TableHead>
+                <TableHead className="hidden text-right sm:table-cell">Weekly</TableHead>
                 <TableHead className="hidden text-right sm:table-cell">Monthly</TableHead>
-                <TableHead className="pr-4">Registration</TableHead>
+                <TableHead className="hidden pr-4 sm:table-cell">Registration</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -100,6 +100,19 @@ export default async function VehiclesPage({
                           <span className="text-xs text-muted-foreground">
                             {vehicle.year} · {vehicle.vehicle_categories?.label ?? '—'}
                           </span>
+                          {/* No celular a tabela nao comporta colunas de preco: elas vem aqui. */}
+                          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums sm:hidden">
+                            <Rate value={vehicle.weekly_rate} active={rentedPlan === 'weekly'} suffix="/wk" />
+                            <Rate value={vehicle.monthly_rate} active={rentedPlan === 'monthly'} suffix="/mo" />
+                            {registration?.expires_at && days !== null ? (
+                              <>
+                                <span className="text-muted-foreground">Reg. {formatMonthYear(registration.expires_at)}</span>
+                                {urgencyFor(days) !== 'ok' && <UrgencyBadge urgency={urgencyFor(days)} />}
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">Not registered</span>
+                            )}
+                          </span>
                         </span>
                       </Link>
                     </TableCell>
@@ -107,9 +120,13 @@ export default async function VehiclesPage({
                       <VehicleStatusBadge status={vehicle.status} />
                     </TableCell>
                     <TableCell className="hidden font-mono text-xs md:table-cell">{vehicle.plate ?? '—'}</TableCell>
-                    <RateCell value={vehicle.weekly_rate} active={rentedPlan === 'weekly'} />
-                    <RateCell value={vehicle.monthly_rate} active={rentedPlan === 'monthly'} className="hidden sm:table-cell" />
-                    <TableCell className="pr-4">
+                    <TableCell className="hidden text-right tabular-nums sm:table-cell">
+                      <Rate value={vehicle.weekly_rate} active={rentedPlan === 'weekly'} />
+                    </TableCell>
+                    <TableCell className="hidden text-right tabular-nums sm:table-cell">
+                      <Rate value={vehicle.monthly_rate} active={rentedPlan === 'monthly'} />
+                    </TableCell>
+                    <TableCell className="hidden pr-4 sm:table-cell">
                       {registration?.expires_at && days !== null ? (
                         <span className="flex items-center gap-2">
                           <span className="tabular-nums">{formatMonthYear(registration.expires_at)}</span>
@@ -134,18 +151,17 @@ export default async function VehiclesPage({
  * Preco do plano. Quando o carro esta alugado naquele plano, o valor ganha
  * destaque: basta bater o olho para saber se a locacao e semanal ou mensal.
  */
-function RateCell({ value, active, className }: { value: number; active: boolean; className?: string }) {
+function Rate({ value, active, suffix }: { value: number; active: boolean; suffix?: string }) {
   return (
-    <TableCell className={cn('text-right tabular-nums', className)}>
-      <span
-        className={cn(
-          active && 'rounded-md bg-brand/15 px-2 py-1 font-semibold text-brand ring-1 ring-inset ring-brand/30',
-        )}
-        title={active ? 'Current rental plan' : undefined}
-      >
-        {active && <span className="sr-only">Current rental plan: </span>}
-        {formatCurrency(value)}
-      </span>
-    </TableCell>
+    <span
+      className={cn(
+        active && 'rounded-md bg-brand/15 px-2 py-1 font-semibold text-brand ring-1 ring-inset ring-brand/30',
+      )}
+      title={active ? 'Current rental plan' : undefined}
+    >
+      {active && <span className="sr-only">Current rental plan: </span>}
+      {formatCurrency(value)}
+      {suffix}
+    </span>
   )
 }
