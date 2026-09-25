@@ -50,7 +50,7 @@ const currencyFormatter = new Intl.NumberFormat(LOCALE, {
 const numberFormatter = new Intl.NumberFormat(LOCALE)
 
 export function formatCurrency(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '--'
+  if (value === null || value === undefined) return '—'
   return currencyFormatter.format(value)
 }
 
@@ -59,23 +59,23 @@ export function formatCurrency(value: number | null | undefined): string {
  * e o mensal aparece como alternativa.
  */
 export function formatWeeklyRate(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '--'
+  if (value === null || value === undefined) return '—'
   return `${currencyFormatter.format(value)}/week`
 }
 
 export function formatMonthlyRate(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '--'
+  if (value === null || value === undefined) return '—'
   return `${currencyFormatter.format(value)}/month`
 }
 
 /** Caucao. Quando nao ha valor definido, nao inventamos zero. */
 export function formatDeposit(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '--'
+  if (value === null || value === undefined) return '—'
   return currencyFormatter.format(value)
 }
 
 export function formatMileage(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '--'
+  if (value === null || value === undefined) return '—'
   return `${numberFormatter.format(value)} mi`
 }
 
@@ -90,7 +90,7 @@ export function parseDateOnly(value: string): Date {
 }
 
 export function formatDate(value: string | null | undefined): string {
-  if (!value) return '--'
+  if (!value) return '—'
   // Data pura nao tem fuso; timestamp e convertido para o horario de San Diego.
   const dateOnly = value.length === 10
   return new Intl.DateTimeFormat(LOCALE, {
@@ -102,7 +102,7 @@ export function formatDate(value: string | null | undefined): string {
 }
 
 export function formatDateTime(value: string | null | undefined): string {
-  if (!value) return '--'
+  if (!value) return '—'
   return new Intl.DateTimeFormat(LOCALE, {
     month: '2-digit',
     day: '2-digit',
@@ -119,7 +119,7 @@ export function formatDateTime(value: string | null | undefined): string {
  * No banco a mesma informacao fica como o ultimo dia daquele mes.
  */
 export function formatMonthYear(value: string | null | undefined): string {
-  if (!value) return '--'
+  if (!value) return '—'
   const date = value.length === 10 ? parseDateOnly(value) : new Date(value)
   return `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
 }

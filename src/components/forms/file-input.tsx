@@ -40,8 +40,10 @@ export function FileInput(props: Omit<React.ComponentProps<'input'>, 'type' | 'o
 
   return (
     <div className="space-y-1">
-      <Input {...props} type="file" onChange={onChange} />
-      {processing && <p className="text-xs text-muted-foreground">Optimizing photo…</p>}
+      <Input {...props} type="file" onChange={onChange} aria-busy={processing} />
+      <p role="status" aria-live="polite" className="text-xs text-muted-foreground">
+        {processing ? 'Optimizing photo…' : ''}
+      </p>
     </div>
   )
 }

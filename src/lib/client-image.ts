@@ -47,5 +47,5 @@ export function oversizeMessage(file: File): string | null {
   const limit = Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)
   return file.type === 'application/pdf'
     ? `${file.name} is larger than ${limit} MB. Upload a photo of the document instead, or a smaller PDF.`
-    : `${file.name} is larger than ${limit} MB.`
+    : `${file.name} is larger than ${limit} MB. Use a smaller photo or take a new one.`
 }

@@ -185,7 +185,15 @@ function OverallStatus({
             {approved} / {total}
           </span>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={approved} aria-valuemin={0} aria-valuemax={total}>
+        <div
+          className="h-1.5 overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-label="Documents approved"
+          aria-valuenow={approved}
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuetext={`${approved} of ${total} approved`}
+        >
           <div className="gold-plate h-full rounded-full transition-all" style={{ width: `${total ? (approved / total) * 100 : 0}%` }} />
         </div>
       </div>

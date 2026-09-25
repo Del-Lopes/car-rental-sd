@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/',
       // Area logada e endpoints tecnicos nao tem nada para indexar.
-      disallow: ['/dashboard', '/api', '/auth'],
+      disallow: ['/dashboard', '/api', '/auth', '/offline'],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   }
